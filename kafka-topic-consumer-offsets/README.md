@@ -23,7 +23,7 @@ This folder’s script defaults to **committed offsets** and optionally adds **a
 - **`pyproject.toml`** — project metadata and dependencies (no `requirements.txt`).
 - **`src/kafka_topic_consumer_offsets/`** — package; CLIs: `topic-consumer-offsets`, `demo-kafka-consumer` (`uv run`).
 - **`uv.lock`** — lockfile; commit it so CI and teammates resolve the same versions.
-- **`docker-compose.local-kafka.yaml`** — local ZooKeeper + single Kafka broker for isolated testing (see [Local Kafka (Docker)](#local-kafka-docker)).
+- **`docker-compose.local-kafka.yaml`** — local **KRaft** single broker (Confluent `cp-kafka` **8.2.0**, no ZooKeeper); see [Local Kafka (Docker)](#local-kafka-docker).
 
 **Setup and run** (from this directory):
 
@@ -62,7 +62,7 @@ The offset lister only shows groups that have **committed** positions for the to
 
 ## Local Kafka (Docker)
 
-Run an isolated **ZooKeeper + single broker** stack on your machine. No cloud credentials. The broker exposes **PLAINTEXT** to the host on **`localhost:9092`**.
+Run an isolated **KRaft** (no ZooKeeper) **single broker** stack on your machine, using **Confluent Platform 8.2** (`confluentinc/cp-kafka:8.2.0`). No cloud credentials. The broker exposes **PLAINTEXT** to the host on **`localhost:9092`**.
 
 **Prerequisites:** [Docker](https://docs.docker.com/get-docker/) and Docker Compose (Compose V2: `docker compose`).
 
@@ -108,7 +108,7 @@ Run an isolated **ZooKeeper + single broker** stack on your machine. No cloud cr
    docker compose -f docker-compose.local-kafka.yaml down
    ```
 
-**Ports:** ZooKeeper `2181`, broker `9092` on the host. Change the `ports:` section in the compose file if they conflict with other services.
+**Ports:** broker **`9092`** on the host (internal `broker:29092` for `docker compose exec` tools). Change the `ports:` section in the compose file if it conflicts with other services.
 
 ---
 
