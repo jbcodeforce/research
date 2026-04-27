@@ -69,43 +69,43 @@ Run an isolated **KRaft** (no ZooKeeper) **single broker** stack on your machine
 1. **Start the cluster** (from this project directory):
 
    ```bash
-   docker compose -f docker-compose.local-kafka.yaml up -d
+   docker compose -f docker-compose.yaml up -d
    ```
 
 2. **Wait** until the broker is healthy (optional):
 
    ```bash
-   docker compose -f docker-compose.local-kafka.yaml ps
+   docker compose -f docker-compose.yaml ps
    ```
 
 3. **Create a topic and seed a consumer group** (so the tool has something to list). The CLI tools use the **internal** listener `broker:29092` inside the container; from the host, clients use `localhost:9092`.
 
    ```bash
-   COMPOSE="docker compose -f docker-compose.local-kafka.yaml"
-   $COMPOSE exec broker kafka-topics --bootstrap-server broker:29092 \
+   docker-compose exec broker kafka-topics --bootstrap-server broker:29092 \
      --create --if-not-exists --topic demo-topic --partitions 2 --replication-factor 1
 
-   printf "msg1\nmsg2\n" | $COMPOSE exec -T broker kafka-console-producer \
+   printf "msg1\nmsg2\n" | docker-compose -T broker kafka-console-producer \
      --bootstrap-server broker:29092 --topic demo-topic
 
-   $COMPOSE exec broker kafka-console-consumer --bootstrap-server broker:29092 \
+   docker-compose exec broker kafka-console-consumer --bootstrap-server broker:29092 \
      --topic demo-topic --group local-smoke --from-beginning \
      --max-messages 2 --timeout-ms 20000
    ```
 
-4. **Run** this project against the local broker. Do **not** set `KAFKA_API_KEY` / `KAFKA_API_SECRET` in `.env` (the code only enables Confluent **SASL_SSL** when *both* are set).
+4. **Run** this project against the local broker. If **every** broker in `KAFKA_BOOTSTRAP_SERVERS` / `--bootstrap-servers` is a local host (`localhost`, `127.0.0.1`, `::1`, or `host.docker.internal`), the clients use **PLAINTEXT** and **ignore** `KAFKA_API_KEY` / `KAFKA_API_SECRET` (so a Confluent Cloud `.env` and Docker local stack can coexist). For a **non-local** host that is still PLAINTEXT (e.g. a LAN IP), pass **`--local`** to force the same behavior.
 
    ```bash
    uv sync
    uv run topic-consumer-offsets --bootstrap-servers localhost:9092 --topic demo-topic
    # or:  export KAFKA_BOOTSTRAP_SERVERS=localhost:9092
    #      uv run topic-consumer-offsets --topic demo-topic
+   # same for: uv run demo-kafka-consumer --topic demo-topic
    ```
 
 5. **Stop and remove** containers (data is not persisted; topic and groups are lost):
 
    ```bash
-   docker compose -f docker-compose.local-kafka.yaml down
+   docker compose -f docker-compose.yaml down
    ```
 
 **Ports:** broker **`9092`** on the host (internal `broker:29092` for `docker compose exec` tools). Change the `ports:` section in the compose file if it conflicts with other services.

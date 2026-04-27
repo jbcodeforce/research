@@ -27,6 +27,7 @@ Python sample: given a topic name, find relevant consumer groups and print **rea
 - `uv lock`, `uv sync`, `uv run topic-consumer-offsets --help`.
 - **confluent-kafka ≥2.14:** `AdminClient.describe_topics` takes `TopicCollection([...])`, not a raw list of names.
 - **`demo_consumer.py` / `uv run demo-kafka-consumer`:** minimal `Consumer` with `enable.auto.commit` + subscribe; same env as the offset CLI; demonstrates a visible group with committed read offsets.
+- **Local vs Confluent in `.env`:** if bootstrap hosts are all local (see `_bootstrap_is_local_only` / `host.docker.internal`), `_client_config` uses **PLAINTEXT** and skips API keys; optional **`--local`** forces PLAINTEXT when bootstrap is a non-local IP.
 - Earlier: `confluent-kafka` AdminClient smoke checks.
 
 ## Follow-ups (optional)

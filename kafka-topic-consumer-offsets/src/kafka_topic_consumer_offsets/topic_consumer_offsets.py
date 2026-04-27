@@ -41,11 +41,51 @@ def _load_dotenv_file() -> None:
     load_dotenv()
 
 
+def _host_from_bootstrap_entry(entry: str) -> str:
+    """Return hostname from one broker entry (supports host:port and [::1]:port)."""
+    s = entry.strip()
+    if not s:
+        return ""
+    if s.startswith("["):
+        return s[1 : s.index("]")]
+    if s.count(":") == 1:
+        return s.split(":", 1)[0]
+    if s.count(":") > 1:
+        host, last = s.rsplit(":", 1)
+        if last.isdigit():
+            return host
+    return s
+
+
+def _is_local_broker_host(host: str) -> bool:
+    h = host.lower().strip()
+    return h in (
+        "localhost",
+        "127.0.0.1",
+        "::1",
+        "0.0.0.0",
+        "host.docker.internal",
+    )
+
+
+def _bootstrap_is_local_only(bootstrap_servers: str) -> bool:
+    """True if every listed broker host is a loopback/local dev hostname."""
+    if not bootstrap_servers.strip():
+        return False
+    for part in bootstrap_servers.split(","):
+        h = _host_from_bootstrap_entry(part)
+        if not h or not _is_local_broker_host(h):
+            return False
+    return True
+
+
 def _client_config(
     bootstrap_servers: str,
     config_file: str | None,
+    *,
+    force_local_plaintext: bool = False,
 ) -> dict[str, str] | None:
-    """Build AdminClient config; Confluent Cloud uses SASL_SSL + PLAIN (key/secret), not HTTP Bearer."""
+    """Build client config. Local brokers use PLAINTEXT; Confluent Cloud uses SASL_SSL + PLAIN (key/secret)."""
     conf: dict[str, str] = {}
     bs = (bootstrap_servers or os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "")).strip()
     if not bs:
@@ -56,13 +96,22 @@ def _client_config(
         return None
     conf["bootstrap.servers"] = bs
 
+    use_plain = force_local_plaintext or _bootstrap_is_local_only(bs)
     key = (os.environ.get("KAFKA_API_KEY") or "").strip()
     secret = (
         os.environ.get("KAFKA_API_SECRET")
         or os.environ.get("KAFKA_API_SECRETS")
         or ""
     ).strip()
-    if key and secret:
+
+    if use_plain:
+        conf["security.protocol"] = "PLAINTEXT"
+        if key or secret:
+            print(
+                "Local PLAINTEXT: ignoring KAFKA_API_KEY / KAFKA_API_SECRET for this connection.",
+                file=sys.stderr,
+            )
+    elif key and secret:
         conf["security.protocol"] = "SASL_SSL"
         conf["sasl.mechanisms"] = "PLAIN"
         conf["sasl.username"] = key
@@ -152,6 +201,7 @@ def _run(args: argparse.Namespace) -> int:
     conf = _client_config(
         args.bootstrap_servers or "",
         args.config_file,
+        force_local_plaintext=bool(getattr(args, "local", False)),
     )
     if conf is None:
         return 2
@@ -305,6 +355,11 @@ def main() -> None:
     p.add_argument("--format", choices=("text", "json"), default="text")
     p.add_argument("--verbose", action="store_true", help="Log per-group offset errors into output")
     p.add_argument("--config-file", help="Optional client properties file (KEY=VALUE lines)")
+    p.add_argument(
+        "--local",
+        action="store_true",
+        help="Use PLAINTEXT and ignore Confluent API keys (for non-localhost bootstrap, e.g. 192.168.x.x).",
+    )
     args = p.parse_args()
     raise SystemExit(_run(args))
 

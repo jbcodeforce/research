@@ -54,13 +54,22 @@ def _parse_args() -> argparse.Namespace:
         help="How often the client may commit offsets in the background (default: 1000).",
     )
     p.add_argument("--config-file", help="Optional extra client properties (KEY=VALUE).")
+    p.add_argument(
+        "--local",
+        action="store_true",
+        help="Use PLAINTEXT and ignore Confluent API keys (or rely on localhost bootstrap auto-detection).",
+    )
     return p.parse_args()
 
 
 def _run() -> int:
     args = _parse_args()
     _load_dotenv_file()
-    base = _client_config(args.bootstrap_servers or "", args.config_file)
+    base = _client_config(
+        args.bootstrap_servers or "",
+        args.config_file,
+        force_local_plaintext=args.local,
+    )
     if base is None:
         return 2
 
