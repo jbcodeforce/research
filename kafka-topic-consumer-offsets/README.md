@@ -21,7 +21,7 @@ This folder’s script defaults to **committed offsets** and optionally adds **a
 ## Project layout (uv)
 
 - **`pyproject.toml`** — project metadata and dependencies (no `requirements.txt`).
-- **`src/kafka_topic_consumer_offsets/`** — package; CLI entry point is declared for `uv run`.
+- **`src/kafka_topic_consumer_offsets/`** — package; CLIs: `topic-consumer-offsets`, `demo-kafka-consumer` (`uv run`).
 - **`uv.lock`** — lockfile; commit it so CI and teammates resolve the same versions.
 - **`docker-compose.local-kafka.yaml`** — local ZooKeeper + single Kafka broker for isolated testing (see [Local Kafka (Docker)](#local-kafka-docker)).
 
@@ -30,10 +30,33 @@ This folder’s script defaults to **committed offsets** and optionally adds **a
 ```bash
 uv sync
 uv run topic-consumer-offsets --help
+
 # or: uv run python -m kafka_topic_consumer_offsets.topic_consumer_offsets --help
 ```
 
 **Add a dependency** later: `uv add <package>`, then commit the updated `pyproject.toml` and `uv.lock`.
+
+### Demo consumer (see a group with committed offsets)
+
+The offset lister only shows groups that have **committed** positions for the topic’s partitions (unless you pass `--show-all-groups` / `--assignment`). To create a clear example, run a tiny **subscribing consumer** with **auto-commit** on, then list offsets for the same topic and group.
+
+1. Ensure the topic has at least one message (produce in the Confluent UI, another app, or `kafka-console-producer` / local Docker flow in this README).
+
+2. Run the demo consumer (uses the same `.env` / `--bootstrap-servers` as `topic-consumer-offsets`):
+
+   ```bash
+   uv run demo-kafka-consumer --topic raw_leads --group demo-committed-offsets
+   ```
+
+   It reads up to five messages (configurable with `--max-messages`), then **closes the consumer** so offsets are committed to the `__consumer_offsets` topic.
+
+3. List committed offsets for that group and topic:
+
+   ```bash
+   uv run topic-consumer-offsets --topic raw_leads --show-all-groups
+   ```
+
+   You should see `demo-committed-offsets` with `committed=<n>` and `invalid=false` for partitions that were read.
 
 ---
 
