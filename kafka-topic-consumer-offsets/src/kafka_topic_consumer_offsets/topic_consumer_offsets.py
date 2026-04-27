@@ -20,7 +20,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any, Iterable
 
-from confluent_kafka import ConsumerGroupTopicPartitions, TopicPartition
+from confluent_kafka import ConsumerGroupTopicPartitions, TopicCollection, TopicPartition
 from confluent_kafka.admin import OFFSET_INVALID, AdminClient, KafkaException
 
 try:
@@ -87,7 +87,7 @@ def _client_config(
 
 
 def _topic_partition_ids(admin: AdminClient, topic: str, timeout: float) -> list[int]:
-    fs = admin.describe_topics([topic], request_timeout=timeout)
+    fs = admin.describe_topics(TopicCollection([topic]), request_timeout=timeout)
     fut = fs.get(topic)
     if fut is None:
         raise RuntimeError(f"describe_topics did not return future for {topic!r}")

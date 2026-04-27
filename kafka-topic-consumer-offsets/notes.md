@@ -25,6 +25,7 @@ Python sample: given a topic name, find relevant consumer groups and print **rea
 ## Commands tried
 
 - `uv lock`, `uv sync`, `uv run topic-consumer-offsets --help`.
+- **confluent-kafka ≥2.14:** `AdminClient.describe_topics` takes `TopicCollection([...])`, not a raw list of names.
 - Earlier: `confluent-kafka` AdminClient smoke checks.
 
 ## Follow-ups (optional)
