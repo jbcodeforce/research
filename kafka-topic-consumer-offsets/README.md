@@ -23,6 +23,7 @@ This folder’s script defaults to **committed offsets** and optionally adds **a
 - **`pyproject.toml`** — project metadata and dependencies (no `requirements.txt`).
 - **`src/kafka_topic_consumer_offsets/`** — package; CLI entry point is declared for `uv run`.
 - **`uv.lock`** — lockfile; commit it so CI and teammates resolve the same versions.
+- **`docker-compose.local-kafka.yaml`** — local ZooKeeper + single Kafka broker for isolated testing (see [Local Kafka (Docker)](#local-kafka-docker)).
 
 **Setup and run** (from this directory):
 
@@ -34,22 +35,83 @@ uv run topic-consumer-offsets --help
 
 **Add a dependency** later: `uv add <package>`, then commit the updated `pyproject.toml` and `uv.lock`.
 
-### Confluent Cloud and `.env`
+---
+
+## Local Kafka (Docker)
+
+Run an isolated **ZooKeeper + single broker** stack on your machine. No cloud credentials. The broker exposes **PLAINTEXT** to the host on **`localhost:9092`**.
+
+**Prerequisites:** [Docker](https://docs.docker.com/get-docker/) and Docker Compose (Compose V2: `docker compose`).
+
+1. **Start the cluster** (from this project directory):
+
+   ```bash
+   docker compose -f docker-compose.local-kafka.yaml up -d
+   ```
+
+2. **Wait** until the broker is healthy (optional):
+
+   ```bash
+   docker compose -f docker-compose.local-kafka.yaml ps
+   ```
+
+3. **Create a topic and seed a consumer group** (so the tool has something to list). The CLI tools use the **internal** listener `broker:29092` inside the container; from the host, clients use `localhost:9092`.
+
+   ```bash
+   COMPOSE="docker compose -f docker-compose.local-kafka.yaml"
+   $COMPOSE exec broker kafka-topics --bootstrap-server broker:29092 \
+     --create --if-not-exists --topic demo-topic --partitions 2 --replication-factor 1
+
+   printf "msg1\nmsg2\n" | $COMPOSE exec -T broker kafka-console-producer \
+     --bootstrap-server broker:29092 --topic demo-topic
+
+   $COMPOSE exec broker kafka-console-consumer --bootstrap-server broker:29092 \
+     --topic demo-topic --group local-smoke --from-beginning \
+     --max-messages 2 --timeout-ms 20000
+   ```
+
+4. **Run** this project against the local broker. Do **not** set `KAFKA_API_KEY` / `KAFKA_API_SECRET` in `.env` (the code only enables Confluent **SASL_SSL** when *both* are set).
+
+   ```bash
+   uv sync
+   uv run topic-consumer-offsets --bootstrap-servers localhost:9092 --topic demo-topic
+   # or:  export KAFKA_BOOTSTRAP_SERVERS=localhost:9092
+   #      uv run topic-consumer-offsets --topic demo-topic
+   ```
+
+5. **Stop and remove** containers (data is not persisted; topic and groups are lost):
+
+   ```bash
+   docker compose -f docker-compose.local-kafka.yaml down
+   ```
+
+**Ports:** ZooKeeper `2181`, broker `9092` on the host. Change the `ports:` section in the compose file if they conflict with other services.
+
+---
+
+## Confluent Cloud and `.env`
 
 1. Copy `.env.example` to `.env` in this directory (`.env` is gitignored).
 2. Set `KAFKA_BOOTSTRAP_SERVERS` to your cluster’s bootstrap (Kafka endpoint, e.g. `...confluent.cloud:9092`).
 3. Set `KAFKA_API_KEY` and `KAFKA_API_SECRET` (or `KAFKA_API_SECRETS` as an alias for the secret) from the Confluent Cloud **API key** in the console.
 
-**Auth note:** the Kafka client does **not** use an HTTP `Authorization: Bearer …` token. Confluent Cloud’s default cluster access uses **SASL_SSL** with **PLAIN**, where the API key is the SASL *username* and the secret is the SASL *password*. The script configures that when both key and secret are present. Leave them unset to talk to a local cluster with plain `PLAINTEXT` and `--bootstrap-servers` only.
+**Auth note:** the Kafka client does **not** use an HTTP `Authorization: Bearer …` token. Confluent Cloud’s default cluster access uses **SASL_SSL** with **PLAIN**, where the API key is the SASL *username* and the secret is the SASL *password*. The script configures that when both key and secret are present. For **local Docker** (above), keep the API key variables **empty** and use `localhost:9092` (PLAINTEXT).
 
 With `.env` loaded, `--bootstrap-servers` is optional; you still must pass `--topic`.
 
-**Example:**
+**Example (Confluent Cloud):**
 
 ```bash
 uv sync
-cp .env.example .env   # then edit with your cluster values
+cp .env.example .env   # set Confluent Cloud bootstrap, API key, and secret
 
+uv run topic-consumer-offsets --topic my-topic
+```
+
+**More examples** (set `--bootstrap-servers` for local, or use `.env` for cloud as above):
+
+```bash
+# Use with local Docker (bootstrap on CLI) or a cluster reachable at localhost:9092
 uv run topic-consumer-offsets \
   --bootstrap-servers localhost:9092 \
   --topic my-topic
@@ -60,13 +122,13 @@ uv run topic-consumer-offsets \
   --topic my-topic \
   --assignment
 
-# Print every scanned group’s offsets, including OFFSET_INVALID (-1001) rows:
+# Print every scanned group's offsets, including OFFSET_INVALID (-1001) rows:
 uv run topic-consumer-offsets \
   --bootstrap-servers localhost:9092 \
   --topic my-topic \
   --show-all-groups
 
-# Transactional “stable” offsets:
+# Transactional "stable" offsets (mainly relevant for transactional producers):
 uv run topic-consumer-offsets \
   --bootstrap-servers localhost:9092 \
   --topic my-topic \
@@ -79,7 +141,7 @@ uv run topic-consumer-offsets \
 
 ### ACLs
 
-Listing groups and offsets typically needs `DESCRIBE` on the `GROUP` resource and relevant `CLUSTER`/`TOPIC` permissions. Adjust for your Kafka/Confluent Cloud security model.
+**Confluent Cloud:** list and describe API calls need appropriate **role bindings** for the API key. **Local Docker** uses no ACLs by default (PLAINTEXT; the bundled console tools have full access).
 
 ## References
 

@@ -8,4 +8,4 @@ Each folder includes its own research project. I will use different Agents: Curs
 
 - **[Apache Iceberg + Flink (Docker POC)](apache-iceberg-poc/README.md)** — local Flink 2.0, Iceberg REST catalog, MinIO; SQL scripts and quickstart-style flow.
 
-- **[Kafka consumer groups per topic & committed offsets](kafka-topic-consumer-offsets/README.md)** — Python (uv) exploration: which consumer groups touch a topic and their committed (and optionally assigned) offsets.
+- **[Kafka consumer groups per topic & committed offsets](kafka-topic-consumer-offsets/README.md)** — Python (uv) tool + optional **Confluent Cloud** (`.env`) or **local Kafka** via `docker-compose.local-kafka.yaml`.
