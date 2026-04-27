@@ -28,7 +28,7 @@ Python sample: given a topic name, find relevant consumer groups and print **rea
 - **confluent-kafka ≥2.14:** `AdminClient.describe_topics` takes `TopicCollection([...])`, not a raw list of names.
 - **`demo_consumer.py` / `uv run demo-kafka-consumer`:** minimal `Consumer` with `enable.auto.commit` + subscribe; same env as the offset CLI; demonstrates a visible group with committed read offsets.
 - **Local vs Confluent in `.env`:** if bootstrap hosts are all local (see `_bootstrap_is_local_only` / `host.docker.internal`), `_client_config` uses **PLAINTEXT** and skips API keys; optional **`--local`** forces PLAINTEXT when bootstrap is a non-local IP.
-- **`kstream/`:** Java `KafkaStreams` with `EXACTLY_ONCE_V2` (see `kstream/README.md`); `application.id` default `kstream-eos-demo`; Apache Kafka 3.8.0 for CP 8.2 alignment.
+- **`kstream/`:** Java `KafkaStreams` with `EXACTLY_ONCE_V2` (see `kstream/README.md`); `application.id` default `kstream-eos-demo`; Apache Kafka 3.8.0 for CP 8.2 alignment; **Maven** (`pom.xml`, `mvn exec:java`).
 - Earlier: `confluent-kafka` AdminClient smoke checks.
 
 ## Follow-ups (optional)

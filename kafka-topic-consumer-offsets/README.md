@@ -10,7 +10,7 @@ Deliverables:
 
 - **`topic-consumer-offsets`** — list groups relevant to a topic and print committed (and optionally assigned) offsets; optional `--format json`.
 - **`demo-kafka-consumer`** — minimal consumer with auto-commit so you can **see** a group with real commits next to the lister.
-- **[`kstream/`](kstream/README.md)** — **Java** Kafka Streams sample: read → transform → write with **exactly-once v2** (EOS); Gradle + local/Confluent docs.
+- **[`kstream/`](kstream/README.md)** — **Java** Kafka Streams sample: read → transform → write with **exactly-once v2** (EOS); Maven + local/Confluent docs.
 
 ## Problem
 
@@ -35,7 +35,7 @@ This folder’s script defaults to **committed offsets** and optionally adds **a
 - **`pyproject.toml`** — project metadata and dependencies (no `requirements.txt`).
 - **`src/kafka_topic_consumer_offsets/`** — package; CLIs: `topic-consumer-offsets`, `demo-kafka-consumer` (`uv run`).
 - **`uv.lock`** — lockfile; commit it so CI and teammates resolve the same versions.
-- **`kstream/`** — **Java** Kafka Streams (Gradle, EOS); see [`kstream/README.md`](kstream/README.md).
+- **`kstream/`** — **Java** Kafka Streams (Maven, EOS); see [`kstream/README.md`](kstream/README.md).
 - **`docker-compose.yaml`** — local **KRaft** single broker (Confluent `cp-kafka` **8.2.0**, no ZooKeeper); see [Local Kafka (Docker)](#local-kafka-docker).
 
 **Setup and run** (from this directory):

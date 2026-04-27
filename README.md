@@ -8,4 +8,4 @@ Each folder includes its own research project. I will use different Agents: Curs
 — local Flink 2.0, Iceberg REST catalog, MinIO; SQL scripts and quickstart-style flow.
 
 ## [Kafka consumer groups per topic & committed offsets](kafka-topic-consumer-offsets/README.md)
-— Research-style **Python (uv)** tools (Admin API offset listing, demo consumer) and a **Java Kafka Streams** EOS sample in [`kstream/`](kafka-topic-consumer-offsets/kstream/README.md); Confluent Cloud **or** local **KRaft** in `docker-compose.yaml`; notes vs `kafka-consumer-groups`.
+— Research-style **Python (uv)** tools (Admin API offset listing, demo consumer) and a **Java Kafka Streams** EOS sample (**Maven**) in [`kstream/`](kafka-topic-consumer-offsets/kstream/README.md); Confluent Cloud **or** local **KRaft** in `docker-compose.yaml`; notes vs `kafka-consumer-groups`.

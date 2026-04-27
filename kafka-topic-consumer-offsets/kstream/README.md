@@ -2,7 +2,7 @@
 
 Java **Kafka Streams** sample: read from an input topic, apply a string transform (`processed:` + uppercase), write to an output topic. Uses **`processing.guarantee=exactly_once_v2`** (EOS v2) so the pipeline gets Kafka Streams’ transactional read–process–write semantics (idempotent producer + transactions under the hood).
 
-- **Stack:** Gradle (wrapper included), Java 17, `org.apache.kafka:kafka-streams` **3.8.0** (aligned with Confluent Platform 8.2 / [`docker-compose.yaml`](../docker-compose.yaml)).
+- **Stack:** **Maven**, Java 17, `org.apache.kafka:kafka-streams` **3.8.0** (aligned with Confluent Platform 8.2 / [`docker-compose.yaml`](../docker-compose.yaml)).
 - **Main class:** `research.kstream.StreamsPipelineApp`
 
 ## Configuration
@@ -19,17 +19,25 @@ EOS requires the broker to support transactions; the bundled single-node KRaft c
 
 ## Build and run
 
+Prerequisites: **JDK 17+** and **Apache Maven** (`mvn` on `PATH`).
+
 ```bash
 cd kstream
-./gradlew build
-./gradlew run
+mvn -q compile
+mvn -q exec:java
 ```
 
-Or run the distribution JAR:
+Or explicitly:
 
 ```bash
-./gradlew installDist
-./build/install/kstream-eos-demo/bin/kstream-eos-demo
+mvn compile exec:java -Dexec.mainClass=research.kstream.StreamsPipelineApp
+```
+
+Build a JAR (runtime classpath needs Kafka libs on the module path; prefer **`mvn exec:java`** for runs):
+
+```bash
+mvn -q package
+# outputs target/kstream-eos-demo-0.1.0.jar (library dependencies not shaded)
 ```
 
 ## Local Docker (`../docker-compose.yaml`)
@@ -50,7 +58,7 @@ Or run the distribution JAR:
    ```bash
    cd kstream
    export KAFKA_BOOTSTRAP_SERVERS=localhost:9092
-   ./gradlew run
+   mvn -q exec:java
    ```
 
 3. Produce test messages:
