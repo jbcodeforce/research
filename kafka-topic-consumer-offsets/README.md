@@ -18,9 +18,21 @@ Kafka’s Admin API does **not** expose a single RPC such as “list consumer gr
 
 This folder’s script defaults to **committed offsets** and optionally adds **assignment** (`--assignment`) so you can union both views.
 
-## Script: `topic_consumer_offsets.py`
+## Project layout (uv)
 
-**Dependencies:** see `requirements.txt` (`confluent-kafka`, `python-dotenv`).
+- **`pyproject.toml`** — project metadata and dependencies (no `requirements.txt`).
+- **`src/kafka_topic_consumer_offsets/`** — package; CLI entry point is declared for `uv run`.
+- **`uv.lock`** — lockfile; commit it so CI and teammates resolve the same versions.
+
+**Setup and run** (from this directory):
+
+```bash
+uv sync
+uv run topic-consumer-offsets --help
+# or: uv run python -m kafka_topic_consumer_offsets.topic_consumer_offsets --help
+```
+
+**Add a dependency** later: `uv add <package>`, then commit the updated `pyproject.toml` and `uv.lock`.
 
 ### Confluent Cloud and `.env`
 
@@ -35,27 +47,27 @@ With `.env` loaded, `--bootstrap-servers` is optional; you still must pass `--to
 **Example:**
 
 ```bash
-uv pip install -r requirements.txt   # or pip install -r requirements.txt
+uv sync
 cp .env.example .env   # then edit with your cluster values
 
-python topic_consumer_offsets.py \
+uv run topic-consumer-offsets \
   --bootstrap-servers localhost:9092 \
   --topic my-topic
 
 # Include groups that have partition assignment but maybe no commits yet:
-python topic_consumer_offsets.py \
+uv run topic-consumer-offsets \
   --bootstrap-servers localhost:9092 \
   --topic my-topic \
   --assignment
 
 # Print every scanned group’s offsets, including OFFSET_INVALID (-1001) rows:
-python topic_consumer_offsets.py \
+uv run topic-consumer-offsets \
   --bootstrap-servers localhost:9092 \
   --topic my-topic \
   --show-all-groups
 
 # Transactional “stable” offsets:
-python topic_consumer_offsets.py \
+uv run topic-consumer-offsets \
   --bootstrap-servers localhost:9092 \
   --topic my-topic \
   --require-stable

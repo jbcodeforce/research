@@ -16,14 +16,15 @@ Python sample: given a topic name, find relevant consumer groups and print **rea
 
 ## What we built
 
-- `topic_consumer_offsets.py`: CLI with `--bootstrap-servers`, `--topic`, optional `--show-all-groups` (include groups with no commits), `--require-stable`, `--assignment` (union groups discovered via describe assignment).
-- **Confluent Cloud / `.env`:** load `.env` from this directory; `KAFKA_BOOTSTRAP_SERVERS`, `KAFKA_API_KEY`, `KAFKA_API_SECRET` (or `KAFKA_API_SECRETS`) → `SASL_SSL` + `PLAIN` (not HTTP Bearer; that is how the Java/Python clients authenticate to Confluent’s Kafka endpoint).
+- **uv project:** `pyproject.toml` + `uv.lock`, `src/kafka_topic_consumer_offsets/`; console script `topic-consumer-offsets` → `main`.
+- **CLI** (`topic_consumer_offsets.py` module): `--bootstrap-servers`, `--topic`, optional `--show-all-groups`, `--require-stable`, `--assignment` (union groups from describe).
+- **Confluent Cloud / `.env`:** load `.env` from **project root** (parent of `src/`); `KAFKA_BOOTSTRAP_SERVERS`, `KAFKA_API_KEY`, `KAFKA_API_SECRET` (or `KAFKA_API_SECRETS`) → `SASL_SSL` + `PLAIN` (not HTTP Bearer).
 - `.env.example` committed; `.env` gitignored (user copies and fills).
 
 ## Commands tried
 
-- Verified imports and `AdminClient` / `describe_topics` / `list_consumer_group_offsets` against installed `confluent-kafka` on this machine.
-- `python3 -m py_compile topic_consumer_offsets.py` and `--help` OK.
+- `uv lock`, `uv sync`, `uv run topic-consumer-offsets --help`.
+- Earlier: `confluent-kafka` AdminClient smoke checks.
 
 ## Follow-ups (optional)
 

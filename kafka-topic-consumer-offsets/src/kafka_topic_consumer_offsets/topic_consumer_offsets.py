@@ -29,11 +29,15 @@ except ImportError:  # pragma: no cover
     load_dotenv = None  # type: ignore[assignment, misc]
 
 
+def _project_root() -> Path:
+    """Project root (contains pyproject.toml and .env), not the package under src/."""
+    return Path(__file__).resolve().parents[2]
+
+
 def _load_dotenv_file() -> None:
     if load_dotenv is None:
         return
-    here = Path(__file__).resolve().parent
-    load_dotenv(here / ".env")
+    load_dotenv(_project_root() / ".env")
     load_dotenv()
 
 
