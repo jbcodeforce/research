@@ -14,6 +14,10 @@ Your final commit should include just that folder and selected items:
 * Adopt test driven development in separate tests folderm and start by the unit tests for each important functions to implement.
 * Try to avoid duplicate function, refactor to reuse code as much as possible and isolate some functions in common utilities when necessary.
 * When using docker image for Confluent Platform use last version which should be at least 8.2
+* for Java project use maven and not graddle.
 
 ## Update project main readme 
-After each research implementation add a new section to reference the new research intent, and scope, 
+After each research implementation add a new section to reference the new research intent, and scope
+
+## Markdown content
+- do not over use of bold string in paragraph.

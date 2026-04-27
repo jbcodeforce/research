@@ -8,7 +8,7 @@ This folder documents a **local demo**: run the Java Kafka Streams pipeline in [
 
 | Piece | Role |
 |--------|------|
-| `uv run streams-demo-producer` | Publishes to `streams-input`. **Key** = `device-1` … `device-5` (UTF-8). **Value** = JSON `{"device_id":"...","value":"hello-..."}`. |
+| `uv run streams-demo-producer` | Publishes to `streams-input`. **Key** = `device-1` … `device-5` (UTF-8). **Value** = JSON `{"device_id":"...","value":"hello_<seq>"}` (e.g. `hello_100`). Use `--start-seq N` to continue numbering; `--follow` until interrupted. |
 | `mvn exec:java` in `kstream/` | Reads the value as a string, writes `processed:` + `UPPER(value)` to `streams-output` (so the **whole JSON string** is uppercased on the output topic). |
 | [`flink/continue_from_offsets.sql`](flink/continue_from_offsets.sql) | Declares a Kafka table on `streams-input` with `format` = `json`, a **new** `properties.group.id`, and `specific-offsets` you fill in from the steps below. Inserts to the **`print` connector** with `CONCAT('processed:', UPPER(value))` on the parsed `value` field. |
 

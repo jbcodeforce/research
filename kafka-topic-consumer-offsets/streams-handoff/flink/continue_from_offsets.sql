@@ -1,6 +1,6 @@
 -- Continue reading `streams-input` in Flink after stopping Kafka Streams.
 -- Message format (from `streams-demo-producer`): JSON value
---   {"device_id":"device-1","value":"hello-1-r1"}
+--   {"device_id":"device-1","value":"hello_1"}
 -- Keys: set `scan.startup.specific-offsets` from committed offsets of group
 --   `kstream-eos-demo` on topic `streams-input` (see ../README.md).
 --
