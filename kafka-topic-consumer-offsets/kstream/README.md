@@ -4,6 +4,7 @@ Java **Kafka Streams** sample: read from an input topic, apply a string transfor
 
 - **Stack:** **Maven**, Java 17, `org.apache.kafka:kafka-streams` **3.8.0** (aligned with Confluent Platform 8.2 / [`docker-compose.yaml`](../docker-compose.yaml)).
 - **Main class:** `research.kstream.StreamsPipelineApp`
+- **Handoff demo (Python produce → stop Streams → offsets → Flink SQL):** [`../streams-handoff/README.md`](../streams-handoff/README.md)
 
 ## Configuration
 
@@ -61,7 +62,15 @@ mvn -q package
    mvn -q exec:java
    ```
 
-3. Produce test messages:
+3. Produce test messages (recommended: Python demo producer with five `device_id` keys and JSON payload):
+
+   ```bash
+   cd ..
+   export KAFKA_BOOTSTRAP_SERVERS=localhost:9092
+   uv run streams-demo-producer --local
+   ```
+
+   Plain strings via console producer still work:
 
    ```bash
    printf "hello\nworld\n" | docker compose -f ../docker-compose.yaml exec -T broker kafka-console-producer \

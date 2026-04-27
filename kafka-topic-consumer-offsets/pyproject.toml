@@ -16,6 +16,7 @@ dependencies = [
 [project.scripts]
 topic-consumer-offsets = "kafka_topic_consumer_offsets.topic_consumer_offsets:main"
 demo-kafka-consumer = "kafka_topic_consumer_offsets.demo_consumer:main"
+streams-demo-producer = "kafka_topic_consumer_offsets.streams_demo_producer:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/kafka_topic_consumer_offsets"]

@@ -10,7 +10,9 @@ Deliverables:
 
 - **`topic-consumer-offsets`** — list groups relevant to a topic and print committed (and optionally assigned) offsets; optional `--format json`.
 - **`demo-kafka-consumer`** — minimal consumer with auto-commit so you can **see** a group with real commits next to the lister.
+- **`streams-demo-producer`** — produce keyed JSON demo records for five `device_id`s to `streams-input` (pairs with `kstream/` and [**`streams-handoff/`**](streams-handoff/README.md)).
 - **[`kstream/`](kstream/README.md)** — **Java** Kafka Streams sample: read → transform → write with **exactly-once v2** (EOS); Maven + local/Confluent docs.
+- **[`streams-handoff/`](streams-handoff/README.md)** — walkthrough: stop Streams, read offsets, continue from **`specific-offsets`** in Flink SQL.
 
 ## Problem
 
@@ -33,7 +35,8 @@ This folder’s script defaults to **committed offsets** and optionally adds **a
 ## Project layout (uv + Java Streams)
 
 - **`pyproject.toml`** — project metadata and dependencies (no `requirements.txt`).
-- **`src/kafka_topic_consumer_offsets/`** — package; CLIs: `topic-consumer-offsets`, `demo-kafka-consumer` (`uv run`).
+- **`src/kafka_topic_consumer_offsets/`** — package; CLIs: `topic-consumer-offsets`, `demo-kafka-consumer`, `streams-demo-producer` (`uv run`).
+- **`streams-handoff/`** — README + Flink SQL for offset handoff after stopping Kafka Streams ([`streams-handoff/README.md`](streams-handoff/README.md)).
 - **`uv.lock`** — lockfile; commit it so CI and teammates resolve the same versions.
 - **`kstream/`** — **Java** Kafka Streams (Maven, EOS); see [`kstream/README.md`](kstream/README.md).
 - **`docker-compose.yaml`** — local **KRaft** single broker (Confluent `cp-kafka` **8.2.0**, no ZooKeeper); see [Local Kafka (Docker)](#local-kafka-docker).
