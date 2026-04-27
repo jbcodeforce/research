@@ -20,7 +20,7 @@ Python sample: given a topic name, find relevant consumer groups and print **rea
 - **CLI** (`topic_consumer_offsets.py` module): `--bootstrap-servers`, `--topic`, optional `--show-all-groups`, `--require-stable`, `--assignment` (union groups from describe).
 - **Confluent Cloud / `.env`:** load `.env` from **project root** (parent of `src/`); `KAFKA_BOOTSTRAP_SERVERS`, `KAFKA_API_KEY`, `KAFKA_API_SECRET` (or `KAFKA_API_SECRETS`) → `SASL_SSL` + `PLAIN` (not HTTP Bearer).
 - `.env.example` committed; `.env` gitignored (user copies and fills).
-- **`docker-compose.local-kafka.yaml`:** Confluent `cp-kafka:8.2.0` in **KRaft** mode (combined broker+controller, `CLUSTER_ID` + `KAFKA_LOG_DIRS`); host `localhost:9092` for the CLI, internal `broker:29092` for `docker compose exec` tools.
+- **`docker-compose.yaml`:** Confluent `cp-kafka:8.2.0` in **KRaft** mode (combined broker+controller, `CLUSTER_ID` + `KAFKA_LOG_DIRS`); host `localhost:9092` for the CLI, internal `broker:29092` for `docker compose exec` tools.
 
 ## Commands tried
 

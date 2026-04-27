@@ -179,7 +179,7 @@ uv run topic-consumer-offsets \
 
 ## Why not only `kafka-consumer-groups` / `--describe`?
 
-The Kafka distribution includes **`kafka-consumer-groups`** (sometimes suffixed `.sh`). **`--describe --group <id>`** is the usual way to inspect **one** group: LAG, committed offset, and partition assignment. You should use it when you already know the group id and have the CLI on `PATH` or inside a broker container.
+The Kafka distribution includes **`kafka-consumer-groups.sh`**. **`--describe --group <id>`** is the usual way to inspect **one** group: LAG, committed offset, and partition assignment. You should use it when you already know the group id and have the CLI on `PATH` or inside a broker container.
 
 This project does **not** replace that workflow; use both for cross-checks (see `notes.md`). The Python tool targets a different convenience:
 
