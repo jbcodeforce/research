@@ -166,6 +166,26 @@ uv run topic-consumer-offsets \
 
 **Confluent Cloud:** list and describe API calls need appropriate **role bindings** for the API key. **Local Docker** uses no ACLs by default (PLAINTEXT; the bundled console tools have full access).
 
+## Why not only `kafka-consumer-groups` / `--describe`?
+
+The Kafka distribution includes **`kafka-consumer-groups`** (sometimes suffixed `.sh`). **`--describe --group <id>`** is the usual way to inspect **one** group: LAG, committed offset, and partition assignment. You should use it when you already know the group id and have the CLI on `PATH` or inside a broker container.
+
+This project does **not** replace that workflow; use both for cross-checks (see `notes.md`). The Python tool targets a different convenience:
+
+| | `kafka-consumer-groups --describe` | `uv run topic-consumer-offsets` |
+|--|--------------------------------------|----------------------------------|
+| **Input** | You pass **one** `--group` | You pass a **topic**; groups are discovered against that topic |
+| **Environment** | Needs Kafka/Confluent **binaries** or `docker exec … broker …` | **`uv run`** + `confluent-kafka` + `.env` (handy for **Confluent Cloud** without a local Kafka install) |
+| **Output** | Text table | Text or **`--format json`** for scripts/CI |
+| **“Groups for topic X”** | No single subcommand: list all groups, then describe each (e.g. shell loop) | One command that scans groups and filters by topic offsets (and optional `--assignment`) |
+
+**Example (local Docker):** compare a known group to this tool’s output:
+
+```bash
+docker compose exec broker kafka-consumer-groups --bootstrap-server broker:29092 \
+  --describe --group local-smoke
+```
+
 ## References
 
 - Confluent Kafka Python Admin: `AdminClient.list_consumer_groups`, `list_consumer_group_offsets`, `describe_consumer_groups`, `describe_topics`.
