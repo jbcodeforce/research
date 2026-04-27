@@ -1,4 +1,4 @@
-# Research: Consumer groups per topic & committed offsets (Python)
+# Research: Kafka consumer groups per topic & committed offsets (Python)
 
 ## Problem
 
@@ -20,12 +20,23 @@ This folder’s script defaults to **committed offsets** and optionally adds **a
 
 ## Script: `topic_consumer_offsets.py`
 
-**Dependencies:** see `requirements.txt` (`confluent-kafka`).
+**Dependencies:** see `requirements.txt` (`confluent-kafka`, `python-dotenv`).
+
+### Confluent Cloud and `.env`
+
+1. Copy `.env.example` to `.env` in this directory (`.env` is gitignored).
+2. Set `KAFKA_BOOTSTRAP_SERVERS` to your cluster’s bootstrap (Kafka endpoint, e.g. `...confluent.cloud:9092`).
+3. Set `KAFKA_API_KEY` and `KAFKA_API_SECRET` (or `KAFKA_API_SECRETS` as an alias for the secret) from the Confluent Cloud **API key** in the console.
+
+**Auth note:** the Kafka client does **not** use an HTTP `Authorization: Bearer …` token. Confluent Cloud’s default cluster access uses **SASL_SSL** with **PLAIN**, where the API key is the SASL *username* and the secret is the SASL *password*. The script configures that when both key and secret are present. Leave them unset to talk to a local cluster with plain `PLAINTEXT` and `--bootstrap-servers` only.
+
+With `.env` loaded, `--bootstrap-servers` is optional; you still must pass `--topic`.
 
 **Example:**
 
 ```bash
 uv pip install -r requirements.txt   # or pip install -r requirements.txt
+cp .env.example .env   # then edit with your cluster values
 
 python topic_consumer_offsets.py \
   --bootstrap-servers localhost:9092 \

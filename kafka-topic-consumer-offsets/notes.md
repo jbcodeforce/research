@@ -17,6 +17,8 @@ Python sample: given a topic name, find relevant consumer groups and print **rea
 ## What we built
 
 - `topic_consumer_offsets.py`: CLI with `--bootstrap-servers`, `--topic`, optional `--show-all-groups` (include groups with no commits), `--require-stable`, `--assignment` (union groups discovered via describe assignment).
+- **Confluent Cloud / `.env`:** load `.env` from this directory; `KAFKA_BOOTSTRAP_SERVERS`, `KAFKA_API_KEY`, `KAFKA_API_SECRET` (or `KAFKA_API_SECRETS`) → `SASL_SSL` + `PLAIN` (not HTTP Bearer; that is how the Java/Python clients authenticate to Confluent’s Kafka endpoint).
+- `.env.example` committed; `.env` gitignored (user copies and fills).
 
 ## Commands tried
 

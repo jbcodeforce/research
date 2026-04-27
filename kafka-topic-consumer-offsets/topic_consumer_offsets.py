@@ -14,12 +14,72 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
 from typing import Any, Iterable
 
 from confluent_kafka import ConsumerGroupTopicPartitions, TopicPartition
 from confluent_kafka.admin import OFFSET_INVALID, AdminClient, KafkaException
+
+try:
+    from dotenv import load_dotenv
+except ImportError:  # pragma: no cover
+    load_dotenv = None  # type: ignore[assignment, misc]
+
+
+def _load_dotenv_file() -> None:
+    if load_dotenv is None:
+        return
+    here = Path(__file__).resolve().parent
+    load_dotenv(here / ".env")
+    load_dotenv()
+
+
+def _client_config(
+    bootstrap_servers: str,
+    config_file: str | None,
+) -> dict[str, str] | None:
+    """Build AdminClient config; Confluent Cloud uses SASL_SSL + PLAIN (key/secret), not HTTP Bearer."""
+    conf: dict[str, str] = {}
+    bs = (bootstrap_servers or os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "")).strip()
+    if not bs:
+        print(
+            "Set KAFKA_BOOTSTRAP_SERVERS in .env or pass --bootstrap-servers",
+            file=sys.stderr,
+        )
+        return None
+    conf["bootstrap.servers"] = bs
+
+    key = (os.environ.get("KAFKA_API_KEY") or "").strip()
+    secret = (
+        os.environ.get("KAFKA_API_SECRET")
+        or os.environ.get("KAFKA_API_SECRETS")
+        or ""
+    ).strip()
+    if key and secret:
+        conf["security.protocol"] = "SASL_SSL"
+        conf["sasl.mechanisms"] = "PLAIN"
+        conf["sasl.username"] = key
+        conf["sasl.password"] = secret
+    elif key or secret:
+        print(
+            "Set both KAFKA_API_KEY and KAFKA_API_SECRET (or KAFKA_API_SECRETS) for Confluent auth",
+            file=sys.stderr,
+        )
+        return None
+
+    if config_file:
+        with open(config_file, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                k, v = line.split("=", 1)
+                conf[k.strip()] = v.strip()
+
+    return conf
 
 
 def _topic_partition_ids(admin: AdminClient, topic: str, timeout: float) -> list[int]:
@@ -85,16 +145,12 @@ def _group_ids_with_assignment(
 
 
 def _run(args: argparse.Namespace) -> int:
-    conf = {"bootstrap.servers": args.bootstrap_servers}
-    if args.config_file:
-        # Minimal support: KEY=VAL lines for ssl/sasl if needed
-        with open(args.config_file, encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if not line or line.startswith("#") or "=" not in line:
-                    continue
-                k, v = line.split("=", 1)
-                conf[k.strip()] = v.strip()
+    conf = _client_config(
+        args.bootstrap_servers or "",
+        args.config_file,
+    )
+    if conf is None:
+        return 2
 
     admin = AdminClient(conf)
     timeout = args.timeout
@@ -220,8 +276,13 @@ def _run(args: argparse.Namespace) -> int:
 
 
 def main() -> None:
+    _load_dotenv_file()
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--bootstrap-servers", required=True, help="e.g. localhost:9092")
+    p.add_argument(
+        "--bootstrap-servers",
+        default="",
+        help="Broker list; if omitted, KAFKA_BOOTSTRAP_SERVERS from .env is used",
+    )
     p.add_argument("--topic", required=True)
     p.add_argument("--timeout", type=float, default=30.0)
     p.add_argument("--require-stable", action="store_true", help="Transactional stable offsets")
