@@ -1,5 +1,16 @@
 # Research: Kafka consumer groups per topic & committed offsets (Python)
 
+## Intent
+
+This is a **small research / tooling** folder in a larger repo: it explores how to answer “**which consumer groups are tied to a topic, and what committed offsets do they have per partition?**” using the Kafka **Admin API** from Python, without relying on `kafka-consumer-groups` shell loops alone.
+
+It is meant to be **easy to run** (`uv`), **usable against Confluent Cloud** (API keys in `.env`) or a **local broker** ([`docker-compose.yaml`](docker-compose.yaml), KRaft, PLAINTEXT), and to **complement** ops tooling: see [Why not only `kafka-consumer-groups`?](#why-not-only-kafka-consumer-groups--describe).
+
+Deliverables:
+
+- **`topic-consumer-offsets`** — list groups relevant to a topic and print committed (and optionally assigned) offsets; optional `--format json`.
+- **`demo-kafka-consumer`** — minimal consumer with auto-commit so you can **see** a group with real commits next to the lister.
+
 ## Problem
 
 Given a Kafka **topic**, you often need:
@@ -23,7 +34,7 @@ This folder’s script defaults to **committed offsets** and optionally adds **a
 - **`pyproject.toml`** — project metadata and dependencies (no `requirements.txt`).
 - **`src/kafka_topic_consumer_offsets/`** — package; CLIs: `topic-consumer-offsets`, `demo-kafka-consumer` (`uv run`).
 - **`uv.lock`** — lockfile; commit it so CI and teammates resolve the same versions.
-- **`docker-compose.local-kafka.yaml`** — local **KRaft** single broker (Confluent `cp-kafka` **8.2.0**, no ZooKeeper); see [Local Kafka (Docker)](#local-kafka-docker).
+- **`docker-compose.yaml`** — local **KRaft** single broker (Confluent `cp-kafka` **8.2.0**, no ZooKeeper); see [Local Kafka (Docker)](#local-kafka-docker).
 
 **Setup and run** (from this directory):
 
