@@ -122,6 +122,7 @@ def _run() -> int:
             line = f"[{n}] {msg.topic()} p{msg.partition()} @{msg.offset()}"
             if val is not None:
                 line += f" value_len={len(val)}"
+                line += f" value={val}"
             if key is not None:
                 line += f" key_len={len(key)}"
             print(line, flush=True)

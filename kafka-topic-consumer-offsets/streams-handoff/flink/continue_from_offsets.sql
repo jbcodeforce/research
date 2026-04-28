@@ -12,32 +12,14 @@
 
 -- SET is optional depending on your SQL client session
 -- 'table.sql-dialect' = 'default';
-
-CREATE TABLE streams_input (
-  device_id STRING,
-  `value` STRING
-) WITH (
-  'connector' = 'kafka',
-  'topic' = 'streams-input',
-  'properties.bootstrap.servers' = 'localhost:9092',
-  'properties.group.id' = 'flink-handoff-demo',
-  'format' = 'json',
-  'json.fail-on-missing-field' = 'false',
-  'json.ignore-parse-errors' = 'false',
-  'scan.startup.mode' = 'specific-offsets',
-  'scan.startup.specific-offsets' = 'partition:0,offset:<NEXT_OFFSET>'
-);
-
--- Mirror the kstream transform (processed: + UPPER) for illustration
-CREATE TABLE print_upper (
-  device_id STRING,
-  out_val STRING
-) WITH (
-  'connector' = 'print'
-);
-
-INSERT INTO print_upper
-SELECT
-  device_id,
-  CONCAT('processed:', UPPER(`value`)) AS out_val
-FROM streams_input;
+INSERT INTO `streams-output`
+WITH parsed AS (
+  SELECT 
+   key AS key,
+   CAST(val AS STRING) AS json
+  from `streams-input`  /*+ OPTIONS('scan.startup.mode'='specific-offsets', 'scan.startup.specific-offsets' = 'partition:1,offset:1;partition:2,offset:1;partition:4,offset:1;partition:5,offset:2;') */ 
+)
+select 
+  key,
+  CAST(CONCAT('"device_id":' , JSON_VALUE(json, '$.device_id'), '"value":',UPPER(JSON_VALUE(json, '$.value'))) AS BYTES)
+FROM parsed

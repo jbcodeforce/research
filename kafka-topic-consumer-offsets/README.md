@@ -4,14 +4,18 @@
 
 This project explores how to answer “which consumer groups are tied to a topic, and what committed offsets do they have per partition?” using the Kafka **Admin API** from Python, without relying on `kafka-consumer-groups` shell loops alone.
 
-It uses (`uv`), usable against Confluent Cloud (API keys in `.env`) or a local broker ([`docker-compose.yaml`](docker-compose.yaml), KRaft, PLAINTEXT), and to complement ops tooling: see [Why not only `kafka-consumer-groups`?](#why-not-only-kafka-consumer-groups--describe).
+For kafka producer, consumer and CLI, the project uses (`uv`), usable against Confluent Cloud (API keys in `.env`) or a local broker ([`docker-compose.yaml`](docker-compose.yaml), KRaft, PLAINTEXT), and to complement ops tooling: see [Why not only `kafka-consumer-groups`?](#why-not-only-kafka-consumer-groups--describe).
+
+There is also a Java Kafka Stream implementation to see how to migrate an existing solution of `consumer-process-produce` with transaction and exactly-once semantic to a SQL Flink implementation. The following figure illustrates the Confluent Cloud deployment
+
+![](./docs/cc-scope.drawio.png)
 
 Deliverables:
 
 - **`topic-consumer-offsets`** — list groups relevant to a topic and print committed (and optionally assigned) offsets; optional `--format json`.
 - **`demo-kafka-consumer`** — minimal consumer with auto-commit so you can see a group with real commits next to the lister.
 - **`streams-demo-producer`** — produce keyed JSON demo records for five `device_id`s to `streams-input` (pairs with `kstream/` and [`streams-handoff/`](streams-handoff/README.md)).
-- **[`kstream/`](kstream/README.md)** — Java Kafka Streams sample: read → transform → write with exactly-once v2 (EOS); Maven + local/Confluent docs.
+- **[`kstream/`](kstream/README.md)** — Java Kafka Streams sample: read JSON payloads, uppercase the `value` field, write out (EOS v2); Maven + local/Confluent docs.
 - **[`streams-handoff/`](streams-handoff/README.md)** — walkthrough: stop Streams, read offsets, continue from `specific-offsets` in Flink SQL.
 
 ## Problem
@@ -23,7 +27,7 @@ Given a Kafka topic, you often need:
 
 Kafka’s Admin API does not expose a single RPC such as “list consumer groups by topic”. You derive the answer by combining metadata and consumer-group APIs.
 
-## Approaches
+## Tool / CLI approaches
 
 | Approach | Idea | Pros | Cons |
 |----------|------|------|------|
@@ -36,10 +40,36 @@ This folder’s script defaults to committed offsets and optionally adds assignm
 
 - **`pyproject.toml`** — project metadata and dependencies (no `requirements.txt`).
 - **`src/kafka_topic_consumer_offsets/`** — package; CLIs: `topic-consumer-offsets`, `demo-kafka-consumer`, `streams-demo-producer` (`uv run`).
-- **`streams-handoff/`** — README + Flink SQL for offset handoff after stopping Kafka Streams ([`streams-handoff/README.md`](streams-handoff/README.md)).
-- **`uv.lock`** — lockfile; commit it so CI and teammates resolve the same versions.
-- **`kstream/`** — Java Kafka Streams (Maven, EOS); see [`kstream/README.md`](kstream/README.md).
+- **`kstream/`** — Java Kafka Streams (Maven, EOS); JSON `value` field uppercasing; see [`kstream/README.md`](kstream/README.md).
 - **`docker-compose.yaml`** — local KRaft single broker (Confluent `cp-kafka` 8.2.0, no ZooKeeper); see [Local Kafka (Docker)](#local-kafka-docker).
+- **`streams-handoff/`** — README + Flink SQL for offset handoff after stopping Kafka Streams ([`streams-handoff/README.md`](streams-handoff/README.md)).
+
+## Demonstration on Confluent Cloud
+### Confluent Cloud Setup
+
+* Copy .env.example to .env
+  ```sh
+  cp .env.example to .env
+  ```
+* Modify the file for the expected environment variables, then:
+  ```sh
+  source .env
+  ```
+
+* Using confluent cli:
+  ```sh
+  confluent login
+  ```
+
+* Set env end create some topics
+  ```sh
+  confluent environment use $CC_ENV_ID
+  confluent kafka cluster list
+  confluent kafka cluster use  lkc-....
+  confluent kafka topic create streams-output
+  confluent kafka topic create streams-input
+  confluent kafka topic list
+  ```
 
 **Setup and run** (from this directory):
 
@@ -50,18 +80,32 @@ uv run topic-consumer-offsets --help
 # or: uv run python -m kafka_topic_consumer_offsets.topic_consumer_offsets --help
 ```
 
-**Add a dependency** later: `uv add <package>`, then commit the updated `pyproject.toml` and `uv.lock`.
 
-### Demo consumer (see a group with committed offsets)
+### Assess current groups
+
+```sh
+uv run topic-consumer-offsets   --topic streams-output
+```
+
+Should generate something like:
+
+```sh
+topic=streams-output partitions=[0, 1, 2, 3, 4, 5] groups_scanned=1
+```
 
 The offset lister only shows groups that have committed positions for the topic’s partitions (unless you pass `--show-all-groups` / `--assignment`). To create a clear example, run a tiny subscribing consumer with auto-commit on, then list offsets for the same topic and group.
 
-1. Ensure the topic has at least one message (produce in the Confluent UI, another app, or `kafka-console-producer` / local Docker flow in this README).
+1. Run the producer to get 1 message for the 5 devices:
+  ```sh
+  uv run streams-demo-producer
+  # this is the same as
+   uv run streams-demo-producer --bootstrap-servers $KAFKA_BOOTSTRAP_SERVERS --topic streams-input --send-per-key 1 --start-seq 1
+  ```
 
-2. Run the demo consumer (uses the same `.env` / `--bootstrap-servers` as `topic-consumer-offsets`):
+2. Run the demo consumer
 
    ```bash
-   uv run demo-kafka-consumer --topic raw_leads --group demo-committed-offsets
+   uv run demo-kafka-consumer --topic streams-input --group demo-committed-offsets
    ```
 
    It reads up to five messages (configurable with `--max-messages`), then closes the consumer so offsets are committed to the `__consumer_offsets` topic.
@@ -69,16 +113,118 @@ The offset lister only shows groups that have committed positions for the topic�
 3. List committed offsets for that group and topic:
 
    ```bash
-   uv run topic-consumer-offsets --topic raw_leads --show-all-groups
+   uv run topic-consumer-offsets --topic streams-input --show-all-groups
    ```
 
    You should see `demo-committed-offsets` with `committed=<n>` and `invalid=false` for partitions that were read.
+
+   ```sh
+    topic=streams-input partitions=[0, 1, 2, 3, 4, 5] groups_scanned=1
+    demo-committed-offsets	p0	committed=None	invalid=True	meta=None
+    demo-committed-offsets	p1	committed=1	invalid=False	meta=None
+    demo-committed-offsets	p2	committed=1	invalid=False	meta=None
+    demo-committed-offsets	p3	committed=None	invalid=True	meta=None
+    demo-committed-offsets	p4	committed=1	invalid=False	meta=None
+    demo-committed-offsets	p5	committed=2	invalid=False	meta=None
+   ```
+
+### Start Kafka Stream processing
+
+Prerequisites: **JDK 17+** and **Apache Maven** (`mvn` on `PATH`).
+
+* Start a new terminal and be sure to export the environment variables
+  ```sh
+  export KAFKA_BOOTSTRAP_SERVERS=pkc-.....us-west-2.aws.confluent.cloud:9092
+  export KAFKA_API_KEY=....
+  export KAFKA_API_SECRET=cfl....
+  ```
+
+* Then start the Kafka Stream processing
+  ```bash
+  cd kstream
+  mvn -q compile
+  mvn -q exec:java
+  ```
+
+  You should get a trace like:
+  ```sh
+  Starting Kafka Streams: appId=kstream-eos-demo in=streams-input out=streams-output bootstrap=pkc-rgm37.us-west-2.aws.confluent.cloud:9092 processing.guarantee=exactly_once_v2
+  KafkaStreams state CREATED -> REBALANCING
+  KafkaStreams state REBALANCING -> RUNNING
+  ```
+
+* Start the consumer in another terminal and stop it, for following tests
+ ```sh
+ # from  kafka-topic-consumer-offset folder
+ uv run demo-kafka-consumer --topic streams-output
+ ```
+
+ you should get:
+ ```sh
+  [1] streams-output p2 @0 value_len=42 value=b'{"device_id":"device-5","value":"HELLO_5"}' key_len=8
+  [2] streams-output p4 @0 value_len=42 value=b'{"device_id":"device-1","value":"HELLO_1"}' key_len=8
+  [3] streams-output p4 @2 value_len=42 value=b'{"device_id":"device-2","value":"HELLO_2"}' key_len=8
+  [4] streams-output p4 @3 value_len=42 value=b'{"device_id":"device-3","value":"HELLO_3"}' key_len=8
+  [5] streams-output p0 @0 value_len=42 value=b'{"device_id":"device-4","value":"HELLO_4"}' key_len=8
+ ```
+
+* Get the offset per partitions from the input stream
+  ```sh
+  uv run topic-consumer-offsets   --topic streams-input  
+  ```
+  
+* Stop the kafka stream process.
+* In Confluent Console, Worspace cell: start a consumer
+  ```sql
+  WITH parsed AS (
+    SELECT 
+    CAST(key AS STRING) AS key,
+    CAST(val AS STRING) AS json
+    from `streams-output` 
+  ) 
+  SELECT * FROM parsed;
+  ```
+
+  you should see the five first records.
+
+* Send other new records while Kafka streams and Flink transformation are not running. 
+  ```sh
+  uv run streams-demo-producer --topic streams-input --send-per-key 3 --start-seq 5 
+  ```
+
+* Modify the Flink SQL statement with the matching offset. See file [streams-handoff/flink/continue_from_offsets.sql](./streams-handoff/flink/continue_from_offsets.sq)
+  ```sql
+  INSERT INTO `streams-output`
+  WITH parsed AS (
+    SELECT 
+    key AS key,
+    CAST(val AS STRING) AS json
+    from `streams-input`  /*+ OPTIONS('scan.startup.mode'='specific-offsets', 'scan.startup.specific-offsets' = 'partition:1,offset:1;partition:2,offset:1;partition:4,offset:1;partition:5,offset:2;') */ 
+  )
+  select 
+    key,
+    CAST(CONCAT('"device_id":' , JSON_VALUE(json, '$.device_id'), '"value":',UPPER(JSON_VALUE(json, '$.value'))) AS BYTES)
+  FROM parsed
+  ```
+
+  and run it, in another workspace cell
+
+* You should see the new records arriving without duplicate
+  ![](./docs/streams-output.png)
+
+* Which can also being validates with the external kafka consumer:
+  ```sh
+   uv run demo-kafka-consumer --topic streams-output --group demo-committed-offset --max-messages 30 
+  ```
+
 
 ---
 
 ## Local Kafka (Docker)
 
 Run an isolated KRaft (no ZooKeeper) single broker stack on your machine, using Confluent Platform 8.2 (`confluentinc/cp-kafka:8.2.0`). No cloud credentials. The broker exposes PLAINTEXT to the host on `localhost:9092`.
+
+![](./docs/local-scope.drawio.png)
 
 **Prerequisites:** [Docker](https://docs.docker.com/get-docker/) and Docker Compose (Compose V2: `docker compose`).
 

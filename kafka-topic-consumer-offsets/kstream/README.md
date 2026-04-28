@@ -1,6 +1,6 @@
 # Kafka Streams — consume / process / produce (EOS)
 
-Java **Kafka Streams** sample: read from an input topic, apply a string transform (`processed:` + uppercase), write to an output topic. Uses **`processing.guarantee=exactly_once_v2`** (EOS v2) so the pipeline gets Kafka Streams’ transactional read–process–write semantics (idempotent producer + transactions under the hood).
+Java **Kafka Streams** sample: read from an input topic, parse JSON values with a `value` field (e.g. `device_id` + `value`), uppercase `value`, and emit JSON; non-JSON input still uses the legacy transform (`processed:` + full-string uppercase). Uses **`processing.guarantee=exactly_once_v2`** (EOS v2) so the pipeline gets Kafka Streams’ transactional read–process–write semantics (idempotent producer + transactions under the hood).
 
 - **Stack:** **Maven**, Java 17, `org.apache.kafka:kafka-streams` **3.8.0** (aligned with Confluent Platform 8.2 / [`docker-compose.yaml`](../docker-compose.yaml)).
 - **Main class:** `research.kstream.StreamsPipelineApp`
@@ -10,11 +10,11 @@ Java **Kafka Streams** sample: read from an input topic, apply a string transfor
 
 | Source | Purpose |
 |--------|---------|
-| Env `KAFKA_BOOTSTRAP_SERVERS` | Bootstrap servers (default in `application.properties`: `localhost:9092`) |
-| Env `INPUT_TOPIC` / `OUTPUT_TOPIC` | Topic names (defaults: `streams-input`, `streams-output`) |
-| Env `KAFKA_STREAMS_APPLICATION_ID` | Streams `application.id` (default: `kstream-eos-demo`) |
+| Env `KAFKA_BOOTSTRAP_SERVERS` | Bootstrap servers; if unset/blank, `application.properties` → `localhost:9092` |
+| Env `INPUT_TOPIC` / `OUTPUT_TOPIC` | Topic names; if unset/blank, `application.properties` → `streams-input` / `streams-output` |
+| Env `KAFKA_STREAMS_APPLICATION_ID` | Streams `application.id`; if unset/blank, `application.properties` → `kstream-eos-demo` |
 | Env `KAFKA_API_KEY` + `KAFKA_API_SECRET` (or `KAFKA_API_SECRETS`) | Confluent Cloud SASL/PLAIN; **ignored** when bootstrap hosts are all local (same idea as the Python tools) |
-| `-Dbootstrap.servers=…` etc. | JVM system properties override |
+| `application.properties` on the classpath | Defaults when the corresponding env vars are missing or blank (no JVM `-D` override for these settings) |
 
 EOS requires the broker to support transactions; the bundled single-node KRaft compose sets transaction log settings suitable for local dev.
 
@@ -27,6 +27,8 @@ cd kstream
 mvn -q compile
 mvn -q exec:java
 ```
+
+**Environment variables:** the JVM inherits your shell’s environment, so anything you **export** before `mvn exec:java` is visible to the app (e.g. `export KAFKA_BOOTSTRAP_SERVERS=…` then `mvn -q exec:java`). You can also set vars only for that run: `KAFKA_BOOTSTRAP_SERVERS=pkc-….aws.confluent.cloud:9092 KAFKA_API_KEY=… KAFKA_API_SECRET=… mvn -q exec:java`. This sample does **not** read a `.env` file (unlike the Python CLI); use `export` / `source` if you keep secrets in a file.
 
 Or explicitly:
 
@@ -59,6 +61,7 @@ mvn -q package
    ```bash
    cd kstream
    export KAFKA_BOOTSTRAP_SERVERS=localhost:9092
+   
    mvn -q exec:java
    ```
 
@@ -95,7 +98,7 @@ mvn -q package
 
 ## Confluent Cloud
 
-Set `KAFKA_BOOTSTRAP_SERVERS` to your cluster endpoint and `KAFKA_API_KEY` / `KAFKA_API_SECRET`. The app uses `SASL_SSL` + `PLAIN` (not HTTP Bearer). Create `streams-input` / `streams-output` (or your chosen names) in the cloud UI or CLI with your account.
+Set `KAFKA_BOOTSTRAP_SERVERS` to your cluster endpoint and **both** `KAFKA_API_KEY` and `KAFKA_API_SECRET` (or `KAFKA_API_SECRETS` for the secret). Behavior matches [`topic_consumer_offsets.py`](../src/kafka_topic_consumer_offsets/topic_consumer_offsets.py) `_client_config`: non-local bootstrap uses `SASL_SSL` with SASL mechanism `PLAIN` (API key = username, secret = password — not an HTTP `Authorization: Bearer` header), plus `ssl.endpoint.identification.algorithm=https`. If the bootstrap is not all local hosts and credentials are missing, the process exits with an error. Create `streams-input` / `streams-output` (or your chosen names) in the cloud UI or CLI with your account.
 
 ## Stopping
 

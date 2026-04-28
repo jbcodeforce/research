@@ -1,11 +1,15 @@
 package research.kstream;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.InputStream;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.common.config.SaslConfigs;
+import org.apache.kafka.common.config.SslConfigs;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
@@ -14,11 +18,14 @@ import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.Produced;
 
 /**
- * Minimal consume-process-produce: read string values, transform, write to another topic. Uses
- * {@link StreamsConfig#EXACTLY_ONCE_V2} (EOS) for transactional read-process-write semantics
- * provided by Kafka Streams.
+ * Minimal consume-process-produce: read string values, parse JSON objects with {@code value},
+ * uppercase that field, and write JSON back. Non-JSON / parse failures fall back to {@code
+ * processed:} + full-string uppercase. Uses {@link StreamsConfig#EXACTLY_ONCE_V2} (EOS) for
+ * transactional read-process-write semantics provided by Kafka Streams.
  */
 public final class StreamsPipelineApp {
+
+  private static final ObjectMapper JSON = new ObjectMapper();
 
   private StreamsPipelineApp() {}
 
@@ -32,18 +39,11 @@ public final class StreamsPipelineApp {
     props.put(StreamsConfig.PROCESSING_GUARANTEE_CONFIG, StreamsConfig.EXACTLY_ONCE_V2);
     // Single-broker local dev (aligns with docker-compose.yaml)
     props.put(StreamsConfig.REPLICATION_FACTOR_CONFIG, 1);
-    maybeSaslPlain(props, cfg);
+    applyKafkaSecurity(props, cfg);
 
     StreamsBuilder builder = new StreamsBuilder();
     KStream<String, String> source = builder.stream(cfg.inputTopic());
-    KStream<String, String> out =
-        source.mapValues(
-            (k, v) -> {
-              if (v == null) {
-                return "[null]";
-              }
-              return "processed:" + v.toUpperCase(Locale.ROOT);
-            });
+    KStream<String, String> out = source.mapValues((k, v) -> processJsonValue(v));
     out.to(cfg.outputTopic(), Produced.with(Serdes.String(), Serdes.String()));
 
     KafkaStreams streams = new KafkaStreams(builder.build(), props);
@@ -79,26 +79,77 @@ public final class StreamsPipelineApp {
     }
   }
 
-  private static void maybeSaslPlain(Properties props, AppConfig cfg) {
+  /**
+   * Parses JSON like {@code {"device_id":"device-5","value":"hello_5"}}, uppercases {@code value},
+   * and re-serializes. If the payload is not a JSON object with a non-null {@code value}, or
+   * parsing fails, applies the previous plain-string behavior ({@code processed:} + uppercase).
+   */
+  private static String processJsonValue(String v) {
+    if (v == null) {
+      return "[null]";
+    }
+    String trimmed = v.trim();
+    if (!trimmed.startsWith("{")) {
+      return legacyPlainTransform(v);
+    }
+    try {
+      JsonNode root = JSON.readTree(trimmed);
+      if (!root.isObject()) {
+        return legacyPlainTransform(v);
+      }
+      ObjectNode obj = (ObjectNode) root;
+      if (!obj.has("value") || obj.get("value").isNull()) {
+        return legacyPlainTransform(v);
+      }
+      String upper = obj.get("value").asText().toUpperCase(Locale.ROOT);
+      obj.put("value", upper);
+      return JSON.writeValueAsString(obj);
+    } catch (Exception e) {
+      return legacyPlainTransform(v);
+    }
+  }
+
+  private static String legacyPlainTransform(String v) {
+    return "processed:" + v.toUpperCase(Locale.ROOT);
+  }
+
+  /**
+   * Matches {@code topic_consumer_offsets._client_config}: local bootstrap → PLAINTEXT; otherwise
+   * Confluent Cloud-style {@code SASL_SSL} + {@code PLAIN} with API key as SASL username and secret
+   * as SASL password (not HTTP {@code Authorization: Bearer}). Exits if remote bootstrap lacks
+   * credentials.
+   */
+  private static void applyKafkaSecurity(Properties props, AppConfig cfg) {
     if (cfg.usePlaintextLocal()) {
       props.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "PLAINTEXT");
+      if (cfg.hasApiCredentials()) {
+        System.err.println(
+            "Local PLAINTEXT: ignoring KAFKA_API_KEY / KAFKA_API_SECRET for this connection.");
+      }
       return;
     }
-    String key = cfg.apiKey();
-    String secret = cfg.apiSecret();
-    if (key == null || key.isEmpty() || secret == null || secret.isEmpty()) {
-      props.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "PLAINTEXT");
-      return;
+    if (!cfg.hasApiCredentials()) {
+      System.err.println(
+          "Set both KAFKA_API_KEY and KAFKA_API_SECRET (or KAFKA_API_SECRETS) for Confluent auth");
+      System.exit(1);
     }
     props.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SASL_SSL");
+    props.put(SslConfigs.SSL_ENDPOINT_IDENTIFICATION_ALGORITHM_CONFIG, "https");
     props.put(SaslConfigs.SASL_MECHANISM, "PLAIN");
     props.put(
         SaslConfigs.SASL_JAAS_CONFIG,
         "org.apache.kafka.common.security.plain.PlainLoginModule required username=\""
-            + key.replace("\"", "\\\"")
+            + jaasEscape(cfg.apiKey())
             + "\" password=\""
-            + secret.replace("\"", "\\\"")
+            + jaasEscape(cfg.apiSecret())
             + "\";");
+  }
+
+  private static String jaasEscape(String s) {
+    if (s == null) {
+      return "";
+    }
+    return s.replace("\\", "\\\\").replace("\"", "\\\"");
   }
 
   record AppConfig(
@@ -146,7 +197,8 @@ public final class StreamsPipelineApp {
     }
 
     String apiKey() {
-      return firstNonEmpty(System.getenv("KAFKA_API_KEY"), "");
+      String k = firstNonEmpty(System.getenv("KAFKA_API_KEY"), "");
+      return k == null ? "" : k.trim();
     }
 
     String apiSecret() {
@@ -154,7 +206,11 @@ public final class StreamsPipelineApp {
       if (a == null || a.isEmpty()) {
         a = System.getenv("KAFKA_API_SECRETS");
       }
-      return a == null ? "" : a;
+      return a == null ? "" : a.trim();
+    }
+
+    boolean hasApiCredentials() {
+      return !apiKey().isEmpty() && !apiSecret().isEmpty();
     }
 
     static AppConfig load() {
@@ -167,25 +223,29 @@ public final class StreamsPipelineApp {
       } catch (Exception e) {
         System.err.println("application.properties: " + e);
       }
-      String boot =
-          firstNonEmpty(
-              System.getenv("KAFKA_BOOTSTRAP_SERVERS"),
-              System.getProperty("bootstrap.servers"),
-              f.getProperty("bootstrap.servers", "localhost:9092"));
       return new AppConfig(
-          boot,
-          firstNonEmpty(
-              System.getenv("INPUT_TOPIC"),
-              System.getProperty("input.topic"),
-              f.getProperty("input.topic", "streams-input")),
-          firstNonEmpty(
-              System.getenv("OUTPUT_TOPIC"),
-              System.getProperty("output.topic"),
-              f.getProperty("output.topic", "streams-output")),
-          firstNonEmpty(
-              System.getenv("KAFKA_STREAMS_APPLICATION_ID"),
-              System.getProperty("application.id"),
-              f.getProperty("application.id", "kstream-eos-demo")));
+          envThenProperties(f, "KAFKA_BOOTSTRAP_SERVERS", "bootstrap.servers", "localhost:9092"),
+          envThenProperties(f, "INPUT_TOPIC", "input.topic", "streams-input"),
+          envThenProperties(f, "OUTPUT_TOPIC", "output.topic", "streams-output"),
+          envThenProperties(
+              f, "KAFKA_STREAMS_APPLICATION_ID", "application.id", "kstream-eos-demo"));
+    }
+
+    /**
+     * Non-blank environment variable first, else non-blank value from {@code application.properties},
+     * else {@code defaultValue}.
+     */
+    private static String envThenProperties(
+        Properties fileProps, String envName, String propertyKey, String defaultValue) {
+      String fromEnv = System.getenv(envName);
+      if (fromEnv != null && !fromEnv.isBlank()) {
+        return fromEnv.trim();
+      }
+      String fromFile = fileProps.getProperty(propertyKey);
+      if (fromFile != null && !fromFile.isBlank()) {
+        return fromFile.trim();
+      }
+      return defaultValue;
     }
 
     private static String firstNonEmpty(String... values) {
