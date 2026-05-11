@@ -15,9 +15,14 @@ Your final commit should include just that folder and selected items:
 * Try to avoid duplicate function, refactor to reuse code as much as possible and isolate some functions in common utilities when necessary.
 * When using docker image for Confluent Platform use last version which should be at least 8.2
 * for Java project use maven and not graddle.
+* comment functions with the intent.
 
 ## Update project main readme 
 After each research implementation add a new section to reference the new research intent, and scope
 
 ## Markdown content
-- do not over use of bold string in paragraph.
+- do not over use of bold string in paragraph, like: **not** **others** , it is too AI generated. 
+
+## Product Version
+* When using Kafka use Confluent Platform community edition version 8.2.0 or above
+* For Apache flink use version 2.2 and above.

@@ -207,7 +207,9 @@ Prerequisites: **JDK 17+** and **Apache Maven** (`mvn` on `PATH`).
   FROM parsed
   ```
 
-  and run it, in another workspace cell
+  and run it, in another workspace cell.
+
+* *Important to note that this is primarily applicable for stateless queries.*
 
 * You should see the new records arriving without duplicate
   ![](./docs/streams-output.png)
@@ -216,6 +218,10 @@ Prerequisites: **JDK 17+** and **Apache Maven** (`mvn` on `PATH`).
   ```sh
    uv run demo-kafka-consumer --topic streams-output --group demo-committed-offset --max-messages 30 
   ```
+
+## Source of information
+
+* [Flink Carry-over offsets - product documentation](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/carry-over-offsets.html) for stateless Flink statements. Flink stateful statements need to reprocess from the earliest offset from non-compacted and append mode topic.
 
 
 ---

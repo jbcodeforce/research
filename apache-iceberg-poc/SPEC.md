@@ -4,7 +4,7 @@ This document specifies the local proof of concept in this directory. For how we
 
 ## Goals
 
-- Run **Apache Flink 2.0** (Java 21) with **Apache Iceberg 1.10.1** against a **REST catalog** and **MinIO**-backed warehouse, using the official **iceberg-flink-quickstart** Docker pattern.
+- Run Apache Flink 2.2 (Java 21) with Apache Iceberg 1.10.1 against a REST catalog and MinIO-backed warehouse, using the official iceberg-flink-quickstart Docker pattern.
 - Prove end-to-end: create Iceberg catalog and `nyc.taxis` table, enable checkpointing, insert sample rows, query results from Flink SQL.
 - Keep versions and Maven coordinates explicit and pinned for reproducibility.
 - Document host port mappings so you can open Flink UI, MinIO console, and (optionally) probe the REST catalog from the host.
@@ -74,7 +74,7 @@ Flink runs SQL, talks to the Iceberg REST catalog for table metadata, and reads/
 | 4 | **Insert** | `INSERT` of four sample rows completes without error. |
 | 5 | **Select** | `SELECT *` returns four rows (optionally with `tableau` result mode). |
 | 6 | (Optional) | Metadata tables e.g. `` `taxis$snapshots` `` queryable. |
-| 7 | (Optional) | Second script with **inline** Iceberg connector `CREATE TABLE taxis_inline` runs. |
+| 7 | (Optional) | Second script with inline Iceberg connector `CREATE TABLE taxis_inline` runs. |
 | 8 | (Deferred) | Time travel / streaming not required for “green” baseline. |
 
 ## Risks and mitigations

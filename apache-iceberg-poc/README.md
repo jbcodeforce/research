@@ -14,7 +14,7 @@
 From **this directory**:
 
 ```bash
-docker compose up -d --build
+docker-compose up -d --build
 ```
 
 Wait until JobManager, REST catalog, and MinIO are healthy, then use the SQL client in either mode below.
