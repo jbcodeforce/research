@@ -16,6 +16,7 @@ Deliverables:
 - **`demo-kafka-consumer`** — minimal consumer with auto-commit so you can see a group with real commits next to the lister.
 - **`streams-demo-producer`** — produce keyed JSON demo records for five `device_id`s to `streams-input` (pairs with `kstream/` and [`streams-handoff/`](streams-handoff/README.md)).
 - **[`kstream/`](kstream/README.md)** — Java Kafka Streams sample: read JSON payloads, uppercase the `value` field, write out (EOS v2); Maven + local/Confluent docs.
+- **[`ksqldb/`](ksqldb/README.md)** — same transform as `kstream/` as a ksqlDB persistent query for Confluent Cloud (`streams-input` → `streams-output`, EOS).
 - **[`streams-handoff/`](streams-handoff/README.md)** — walkthrough: stop Streams, read offsets, continue from `specific-offsets` in Flink SQL.
 
 ## Problem
@@ -41,6 +42,7 @@ This folder’s script defaults to committed offsets and optionally adds assignm
 - **`pyproject.toml`** — project metadata and dependencies (no `requirements.txt`).
 - **`src/kafka_topic_consumer_offsets/`** — package; CLIs: `topic-consumer-offsets`, `demo-kafka-consumer`, `streams-demo-producer` (`uv run`).
 - **`kstream/`** — Java Kafka Streams (Maven, EOS); JSON `value` field uppercasing; see [`kstream/README.md`](kstream/README.md).
+- **`ksqldb/`** — ksqlDB CSAS pipeline (Confluent Cloud); see [`ksqldb/README.md`](ksqldb/README.md).
 - **`docker-compose.yaml`** — local KRaft single broker (Confluent `cp-kafka` 8.2.0, no ZooKeeper); see [Local Kafka (Docker)](#local-kafka-docker).
 - **`streams-handoff/`** — README + Flink SQL for offset handoff after stopping Kafka Streams ([`streams-handoff/README.md`](streams-handoff/README.md)).
 
@@ -214,14 +216,46 @@ Prerequisites: **JDK 17+** and **Apache Maven** (`mvn` on `PATH`).
 * You should see the new records arriving without duplicate
   ![](./docs/streams-output.png)
 
-* Which can also being validates with the external kafka consumer:
+* Which can also being validate with the external kafka consumer:
   ```sh
    uv run demo-kafka-consumer --topic streams-output --group demo-committed-offset --max-messages 30 
   ```
 
-## Source of information
 
-* [Flink Carry-over offsets - product documentation](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/carry-over-offsets.html) for stateless Flink statements. Flink stateful statements need to reprocess from the earliest offset from non-compacted and append mode topic.
+### More examples
+
+```bash
+# Use with local Docker (bootstrap on CLI) or a cluster reachable at localhost:9092
+uv run topic-consumer-offsets \
+  --bootstrap-servers localhost:9092 \
+  --topic my-topic
+
+# Include groups that have partition assignment but maybe no commits yet:
+uv run topic-consumer-offsets \
+  --bootstrap-servers localhost:9092 \
+  --topic my-topic \
+  --assignment
+
+# Print every scanned group's offsets, including OFFSET_INVALID (-1001) rows:
+uv run topic-consumer-offsets \
+  --bootstrap-servers localhost:9092 \
+  --topic my-topic \
+  --show-all-groups
+
+# Transactional "stable" offsets (mainly relevant for transactional producers):
+uv run topic-consumer-offsets \
+  --bootstrap-servers localhost:9092 \
+  --topic my-topic \
+  --require-stable
+```
+
+**Output (text):** one line per `(group, partition)` with `committed=` and `invalid=` (true when offset is `OFFSET_INVALID`).
+
+**JSON:** `--format json` for machine-readable rows.
+
+### ACLs
+
+Confluent Cloud: list and describe API calls need appropriate role bindings for the API key. Local Docker uses no ACLs by default (PLAINTEXT; the bundled console tools have full access).
 
 
 ---
@@ -278,62 +312,6 @@ Run an isolated KRaft (no ZooKeeper) single broker stack on your machine, using 
 
 Ports: broker `9092` on the host (internal `broker:29092` for `docker compose exec` tools). Change the `ports:` section in the compose file if it conflicts with other services.
 
----
-
-## Confluent Cloud and `.env`
-
-1. Copy `.env.example` to `.env` in this directory (`.env` is gitignored).
-2. Set `KAFKA_BOOTSTRAP_SERVERS` to your cluster’s bootstrap (Kafka endpoint, e.g. `...confluent.cloud:9092`).
-3. Set `KAFKA_API_KEY` and `KAFKA_API_SECRET` (or `KAFKA_API_SECRETS` as an alias for the secret) from the Confluent Cloud API key in the console.
-
-**Auth note:** the Kafka client does not use an HTTP `Authorization: Bearer …` token. Confluent Cloud’s default cluster access uses SASL_SSL with PLAIN, where the API key is the SASL *username* and the secret is the SASL *password*. The script configures that when both key and secret are present. For local Docker (above), keep the API key variables empty and use `localhost:9092` (PLAINTEXT).
-
-With `.env` loaded, `--bootstrap-servers` is optional; you still must pass `--topic`.
-
-**Example (Confluent Cloud):**
-
-```bash
-uv sync
-cp .env.example .env   # set Confluent Cloud bootstrap, API key, and secret
-
-uv run topic-consumer-offsets --topic my-topic
-```
-
-**More examples** (set `--bootstrap-servers` for local, or use `.env` for cloud as above):
-
-```bash
-# Use with local Docker (bootstrap on CLI) or a cluster reachable at localhost:9092
-uv run topic-consumer-offsets \
-  --bootstrap-servers localhost:9092 \
-  --topic my-topic
-
-# Include groups that have partition assignment but maybe no commits yet:
-uv run topic-consumer-offsets \
-  --bootstrap-servers localhost:9092 \
-  --topic my-topic \
-  --assignment
-
-# Print every scanned group's offsets, including OFFSET_INVALID (-1001) rows:
-uv run topic-consumer-offsets \
-  --bootstrap-servers localhost:9092 \
-  --topic my-topic \
-  --show-all-groups
-
-# Transactional "stable" offsets (mainly relevant for transactional producers):
-uv run topic-consumer-offsets \
-  --bootstrap-servers localhost:9092 \
-  --topic my-topic \
-  --require-stable
-```
-
-**Output (text):** one line per `(group, partition)` with `committed=` and `invalid=` (true when offset is `OFFSET_INVALID`).
-
-**JSON:** `--format json` for machine-readable rows.
-
-### ACLs
-
-Confluent Cloud: list and describe API calls need appropriate role bindings for the API key. Local Docker uses no ACLs by default (PLAINTEXT; the bundled console tools have full access).
-
 ## Why not only `kafka-consumer-groups` / `--describe`?
 
 The Kafka distribution includes `kafka-consumer-groups.sh`. `--describe --group <id>` is the usual way to inspect one group: LAG, committed offset, and partition assignment. You should use it when you already know the group id and have the CLI on `PATH` or inside a broker container.
@@ -354,7 +332,10 @@ docker compose exec broker kafka-consumer-groups --bootstrap-server broker:29092
   --describe --group local-smoke
 ```
 
-## References
 
+## Source of information
+
+* [Flink Carry-over offsets - product documentation](https://docs.confluent.io/cloud/current/flink/operate-and-deploy/carry-over-offsets.html) for stateless Flink statements. Flink stateful statements need to reprocess from the earliest offset from non-compacted and append mode topic.
 - Confluent Kafka Python Admin: `AdminClient.list_consumer_groups`, `list_consumer_group_offsets`, `describe_consumer_groups`, `describe_topics`.
 - Internal notes: `notes.md`.
+

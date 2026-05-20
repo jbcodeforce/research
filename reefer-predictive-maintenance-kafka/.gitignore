@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+models/*.joblib
+.pytest_cache/
+flink/sql/_generated/
+dist/
+*.egg-info/

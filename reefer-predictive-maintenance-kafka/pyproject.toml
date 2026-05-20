@@ -1,0 +1,38 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "reefer-predictive-maintenance-kafka"
+version = "0.1.0"
+description = "Predictive maintenance ML for reefers using a single Kafka telemetry topic"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "confluent-kafka>=2.3.0",
+    "joblib>=1.4.0",
+    "numpy>=2.0.0",
+    "pandas>=2.2.0",
+    "python-dotenv>=1.0.0",
+    "pyyaml>=6.0.0",
+    "scikit-learn>=1.5.0",
+]
+
+[project.scripts]
+reefer-pm-generate = "reefer_pm_kafka.generator:main"
+reefer-pm-train = "reefer_pm_kafka.train:main"
+reefer-pm-evaluate = "reefer_pm_kafka.evaluate:main"
+reefer-pm-score = "reefer_pm_kafka.score:main"
+reefer-pm-create-topics = "reefer_pm_kafka.kafka_utils:create_topics_main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/reefer_pm_kafka"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+]

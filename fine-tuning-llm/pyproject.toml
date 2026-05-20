@@ -1,0 +1,18 @@
+[project]
+name = "llm-fine-tuning"
+version = "0.1.0"
+description = "Fine tune a LLM for Spark to Flink SQL migration"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "accelerate>=1.13.0",
+    "bitsandbytes>=0.49.2",
+    "datasets>=4.8.5",
+    "peft>=0.19.1",
+    "protobuf>=7.34.1",
+    "python-dotenv>=1.0.0",
+    "sqlglot>=30.8.0",
+    "torch>=2.12.0",
+    "transformers>=5.8.1",
+    "trl>=1.4.0",
+]

@@ -1,0 +1,22 @@
+# Synthetic reefer telemetry: device holdout and phase sizes.
+train_devices:
+  - reefer_01
+  - reefer_02
+test_devices:
+  - reefer_03
+inference_devices:
+  - reefer_01
+  - reefer_02
+  - reefer_03
+
+# Events per device per phase (1 event / second simulated spacing in timestamps).
+# With WINDOW_SECONDS=10, train phase yields ~40 windows per device (2 train devices).
+events_per_device:
+  train: 400
+  test: 120
+  inference: 60
+
+# Seconds between synthetic events (compressed timeline).
+event_interval_seconds: 1
+
+random_seed: 42

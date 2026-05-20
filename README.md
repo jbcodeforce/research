@@ -13,3 +13,6 @@ Each folder includes its own research project. I will use different Agents: Curs
 ## [Flink benchmark methodology and execution plan](flink-benchmark/README.md)
 — Python-first benchmark research for Flink throughput, latency, scaling, and state backend trade-offs, with reproducible workload profiles (`W1`, `W2`, `W3`) and structured result artifacts.
 
+## [Reefer predictive maintenance — Kafka stream ML](reefer-predictive-maintenance-kafka/README.md)
+— Supervised failure prediction for reefers: training and test telemetry on one Kafka topic (`meta.split`), windowed features, sklearn classifier, local KRaft via Docker; see [SPEC.md](reefer-predictive-maintenance-kafka/SPEC.md).
+
