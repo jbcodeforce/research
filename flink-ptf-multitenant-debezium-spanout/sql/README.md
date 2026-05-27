@@ -28,7 +28,7 @@ See the project [README.md](../README.md) for Confluent Cloud and local runbooks
 
 ## dbt-generated tenant routing DML
 
-[confluent DBT documentation]() and [my summary]()
+[confluent DBT documentation]() and [my summary](https://jbcodeforce.github.io/flink-studies/coding/dbt/)
 
 Use dbt in `sql/order_pipeline` to generate one routing DML statement per tenant from `mt_orders`.
 

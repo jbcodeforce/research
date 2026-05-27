@@ -106,9 +106,9 @@ public final class TransactionDenormalizeLogic {
   public static DenormalizedOrder buildDenormalizedOrder(
       String transactionId, TransactionState state) {
     DenormalizedOrder result = new DenormalizedOrder();
-    result.transaction_id = transactionId;
     result.tenant_id = state.tenantId;
     result.order_id = state.orderId;
+    result.transaction_id = transactionId;
     result.customer_id = state.customerId;
     result.status = state.status;
     result.total_amount = state.totalAmount;

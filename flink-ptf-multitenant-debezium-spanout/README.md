@@ -210,6 +210,21 @@ mvn -f ptf/pom.xml test
 
 ![](./docs/results.png)
 
+#### Clean up
+
+* Drop tables:
+  ```sql
+  DROP TABLE mt_orders
+  ```
+
+* Drop function
+  ```sql
+  drop function MultiTenantTransactionDenormalizer;
+  ```
+
+* Delete Artifact
+
+
 #### dbt deployment to scale the static routing
 
 Generate per-tenant routing DML from `mt_orders` using dbt + Jinja in `sql/order_pipeline`.

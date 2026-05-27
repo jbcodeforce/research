@@ -6,9 +6,9 @@ package com.research.ptf.multitenant;
  * sinks.
  */
 public class DenormalizedOrder {
-  public String transaction_id;
   public String tenant_id;
   public Long order_id;
+  public String transaction_id;
   public Long customer_id;
   public String status;
   public Double total_amount;
