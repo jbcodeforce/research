@@ -1,6 +1,7 @@
-# Flink SQL — multi-tenant span-out PTF
+# Flink SQL for Confluent Cloud or OSS flink
 
-SQL scripts for `MultiTenantTransactionDenormalizer`. Run in order for Kafka streaming; use `*.local.sql` inside Docker (`broker:29092`).
+SQL scripts to demonstrate the PTF: `MultiTenantTransactionDenormalizer`. 
+
 
 | File | Purpose |
 | --- | --- |
@@ -19,13 +20,15 @@ SQL scripts for `MultiTenantTransactionDenormalizer`. Run in order for Kafka str
 
 ### Confluent Cloud test load order
 
-1. `01`–`03` DDL (with Kafka `WITH` on each table)
+1. `01`–`04` DDLs 
 2. Run each insert file once (`08`, `09`, `10` — single `INSERT` with multiple `VALUES` rows)
-3. `06` register PTF → `07` denormalized insert
+3. `06` register PTF or use the `07` denormalized insert
 
 See the project [README.md](../README.md) for Confluent Cloud and local runbooks.
 
 ## dbt-generated tenant routing DML
+
+[confluent DBT documentation]() and [my summary]()
 
 Use dbt in `sql/order_pipeline` to generate one routing DML statement per tenant from `mt_orders`.
 

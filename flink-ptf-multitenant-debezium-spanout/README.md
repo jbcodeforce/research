@@ -143,6 +143,7 @@ The state is kept in checkpoints, and for a duration of 1 hour. See the eval fun
 ```
 
 The PTF implementation logic is:
+
 * when there is a transaction event, assess if this is a END status, then update the State with expectedEventCount. 
 * When there is an order event, update the transaction state with order data where the transaction id in the metadata matches the transaction id of the transaction event. Update the received event counter. 
 * Same logic to order_items events
@@ -184,6 +185,7 @@ mvn -f ptf/pom.xml test
   * 01_ddl_order_cdc.sql
   * 02_ddl_order_items_cdc.sql
   * 03_ddl_transaction_events.sql
+  * 04_ddl_orders.sql
 
 * Upload the PTF JAR via Confluent Console > Artifacts > Add artifact: be sure to select the Cloud provider and region matching Flink workspace location.
 
@@ -201,9 +203,9 @@ mvn -f ptf/pom.xml test
    --cloud aws --region us-west-2 --environment env-
   ```
 
-*As of 05/26/2026, PTF on Confluent Cloud is early access and do not support multiple tables as input to eval(), and alternate is to extract record from the envelop and joins*
-
-
+* Deploy the SQL that use the PTF. See file []()
+  ```
+  ```
 * The simplified version is to remove the envelop and deduplicate within CTE and joins order_items and orders. See [07_dml_denormalized_orders.sq](./sql/cc-flink/07_dml_denormalized_orders.sql)
 
 ![](./docs/results.png)
