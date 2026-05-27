@@ -1,0 +1,10 @@
+version: 2
+
+sources:
+  - name: cc_flink
+    description: "Confluent Cloud Flink CDC tables (see sql/cc-flink DDL scripts)."
+    tables:
+      - name: mt_orders_cdc
+        description: "Debezium-style orders CDC envelope table."
+      - name: mt_order_items_cdc
+        description: "Debezium-style order_items CDC envelope table."

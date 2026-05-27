@@ -1,0 +1,110 @@
+
+# Name your project! Project names should contain only lowercase characters
+# and underscores. A good package name should reflect your organization's
+# name or the intended use of these models
+name: 'order_pipeline'
+version: '1.0.0'
+
+# This setting configures which "profile" dbt uses for this project.
+profile: 'order_pipeline'
+
+# These configurations specify where dbt should look for different types of files.
+# The `model-paths` config, for example, states that models in this project can be
+# found in the "models/" directory. You probably won't need to change these!
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:         # directories to be removed by `dbt clean`
+  - "target"
+  - "dbt_packages"
+
+
+# Configuring models
+# Full documentation: https://docs.getdbt.com/docs/configuring-models
+
+# In this example config, we tell dbt to build all models in the example/
+# directory as views. These settings can be overridden in the individual model
+# files using the `{{ config(...) }}` macro.
+models:
+  order_pipeline:
+    dimensions:
+      +materialized: materialized_view
+    routing:
+      +materialized: table
+
+seeds:
+  order_pipeline:
+    tenant_routes:
+      +column_types:
+        tenant_id: string
+        target_table: string
+    mt_orders_cdc:
+      +column_types:
+        before_id: bigint
+        before_tenant_id: string
+        before_customer_id: bigint
+        before_status: string
+        before_total_amount: double
+        after_id: bigint
+        after_tenant_id: string
+        after_customer_id: bigint
+        after_status: string
+        after_total_amount: double
+        source_version: string
+        source_connector: string
+        source_name: string
+        source_ts_ms: bigint
+        source_db: string
+        source_schema: string
+        source_table: string
+        source_tx_id: bigint
+        source_lsn: bigint
+        source_xmin: bigint
+        op: string
+        ts_ms: bigint
+        transaction_id: string
+        transaction_total_order: bigint
+        transaction_data_collection_order: bigint
+    mt_order_items_cdc:
+      +column_types:
+        before_id: bigint
+        before_order_id: bigint
+        before_product_id: bigint
+        before_quantity: int
+        before_unit_price: double
+        after_id: bigint
+        after_tenant_id: string
+        after_order_id: bigint
+        after_product_id: bigint
+        after_quantity: int
+        after_unit_price: double
+        source_version: string
+        source_connector: string
+        source_name: string
+        source_ts_ms: bigint
+        source_db: string
+        source_schema: string
+        source_table: string
+        source_tx_id: bigint
+        source_lsn: bigint
+        source_xmin: bigint
+        op: string
+        ts_ms: bigint
+        transaction_id: string
+        transaction_total_order: bigint
+        transaction_data_collection_order: bigint
+    mt_transaction_events:
+      +column_types:
+        status: string
+        id: string
+        ts_ms: bigint
+        event_count: bigint
+    mt_transaction_event_data_collections:
+      +column_types:
+        transaction_id: string
+        data_collection: string
+        event_count: bigint

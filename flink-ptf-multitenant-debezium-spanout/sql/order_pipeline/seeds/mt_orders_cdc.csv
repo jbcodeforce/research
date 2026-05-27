@@ -1,0 +1,4 @@
+before_id,before_tenant_id,before_customer_id,before_status,before_total_amount,after_id,after_tenant_id,after_customer_id,after_status,after_total_amount,source_version,source_connector,source_name,source_ts_ms,source_db,source_schema,source_table,source_tx_id,source_lsn,source_xmin,op,ts_ms,transaction_id,transaction_total_order,transaction_data_collection_order
+,,,,,1001,acme,42,pending,299.99,2.5.0.Final,postgresql,inventory,1718294400123,shop,public,orders,12345,98765432,,c,1718294400200,12345:98765432,1,1
+1001,acme,42,pending,299.99,1001,acme,42,confirmed,299.99,2.5.0.Final,postgresql,inventory,1718294400126,shop,public,orders,12345,98765456,,u,1718294400230,12345:98765432,4,2
+,,,,,2001,globex,7,pending,149.50,2.5.0.Final,postgresql,inventory,1718294500123,shop,public,orders,67890,11111111,,c,1718294500200,67890:11111111,1,1

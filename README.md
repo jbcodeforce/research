@@ -16,6 +16,6 @@ Each folder includes its own research project. I will use different Agents: Curs
 ## [Reefer predictive maintenance — Kafka stream ML](reefer-predictive-maintenance-kafka/README.md)
 — Supervised failure prediction for reefers: training and test telemetry on one Kafka topic (`meta.split`), windowed features, sklearn classifier, local KRaft via Docker; see [SPEC.md](reefer-predictive-maintenance-kafka/SPEC.md).
 
-## [Multi-tenant Debezium span-out PTF](flink-ptf-multitenant-debezium-spanout/README.md)
-— Flink 2.2 ProcessTableFunction that fans out completed Debezium transactions from shared multi-tenant CDC into per-collection rows (`tenant_id`, `target_collection`); mock Debezium producer, local Docker (Kafka 8.2 + Flink), and Confluent Cloud Flink artifact path; see [SPEC.md](flink-ptf-multitenant-debezium-spanout/SPEC.md).
+## [Multi-tenant Debezium denormalizer PTF](flink-ptf-multitenant-debezium-spanout/README.md)
+— Flink 2.2 ProcessTableFunction (same use case as DebeziumTransactionDenormalizer) that emits one order row per transaction with `line_items[]` and `tenant_id` for per-tenant routing; mock Debezium producer, local Docker, Confluent Cloud Flink; see [SPEC.md](flink-ptf-multitenant-debezium-spanout/SPEC.md).
 

@@ -2,13 +2,14 @@
 
 ## 2026-05-26 — Project start
 
-- Flow: fan-out (inverse of denormalizer), shared tables with `tenant_id`.
+- Use case aligned with `DebeziumTransactionDenormalizer`: one denormalized order row per transaction with `line_items[]`.
+- Multi-tenant extension: `tenant_id` on input `after` rows and PTF output for routing to per-tenant `orders` tables.
 - PTF completion uses Debezium END `event_count` + `receivedEventCount` (same as reference PTF).
-- Per-tenant physical sinks are SQL filters on unified fan-out stream.
 
 ## Implementation
 
-- `TransactionSpanOutLogic` extracted for unit tests without Flink runtime.
+- `TransactionDenormalizeLogic` extracted for unit tests without Flink runtime.
+- PTF class: `MultiTenantTransactionDenormalizer` → `DenormalizedOrder` POJO.
 - Mock producer keys messages by `transaction.id` for partition alignment with `PARTITION BY transaction_id`.
 
 ## Confluent Cloud

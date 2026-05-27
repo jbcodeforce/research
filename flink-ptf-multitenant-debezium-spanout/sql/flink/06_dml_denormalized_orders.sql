@@ -1,19 +1,17 @@
--- Streaming insert: fan-out completed transactions to unified sink topic.
+-- Streaming insert: one denormalized order row per completed Debezium transaction.
 
-INSERT INTO span_out_sink
+INSERT INTO denormalized_orders_sink
 SELECT
     transaction_id,
     tenant_id,
-    target_collection,
     order_id,
+    customer_id,
     status,
     total_amount,
-    product_id,
-    quantity,
-    unit_price
-FROM MultiTenantTransactionSpanOut(
+    line_items
+FROM MultiTenantTransactionDenormalizer(
     ordersEvent => TABLE orders_cdc PARTITION BY transaction_id,
     orderItemsEvent => TABLE order_items_cdc PARTITION BY transaction_id,
     transactionEvent => TABLE transaction_events PARTITION BY id,
-    uid => 'multitenant-spanout-v1'
+    uid => 'multitenant-denormalizer-v1'
 );

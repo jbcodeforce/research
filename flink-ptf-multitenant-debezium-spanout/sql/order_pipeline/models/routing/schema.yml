@@ -1,0 +1,18 @@
+version: 2
+
+models:
+  - name: tenant_route_dml
+    description: "Generated tenant routing SQL statements from mt_orders."
+    columns:
+      - name: tenant_id
+        description: "Tenant identifier used for WHERE tenant_id filter."
+        data_tests:
+          - not_null
+      - name: target_table
+        description: "Destination table for this tenant route statement."
+        data_tests:
+          - not_null
+      - name: route_sql
+        description: "Rendered INSERT ... SELECT statement for one tenant."
+        data_tests:
+          - not_null

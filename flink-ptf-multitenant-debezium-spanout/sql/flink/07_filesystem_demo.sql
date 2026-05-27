@@ -1,5 +1,3 @@
--- Filesystem batch demo (no Kafka). Run in sql-client after Docker build.
-
 DROP TABLE IF EXISTS orders_cdc_fs;
 CREATE TABLE orders_cdc_fs (
     `before` ROW<id BIGINT, tenant_id STRING, customer_id BIGINT, status STRING, total_amount DOUBLE>,
@@ -43,13 +41,14 @@ CREATE TABLE transaction_events_fs (
     'format' = 'json'
 );
 
-CREATE FUNCTION IF NOT EXISTS MultiTenantTransactionSpanOut
-  AS 'com.research.ptf.multitenant.MultiTenantTransactionSpanOut';
+CREATE FUNCTION IF NOT EXISTS MultiTenantTransactionDenormalizer
+  AS 'com.research.ptf.multitenant.MultiTenantTransactionDenormalizer';
 
-SELECT transaction_id, tenant_id, target_collection, order_id, status, total_amount, product_id, quantity
-FROM MultiTenantTransactionSpanOut(
+SELECT transaction_id, tenant_id, order_id, customer_id, status, total_amount,
+       CARDINALITY(line_items) AS num_line_items
+FROM MultiTenantTransactionDenormalizer(
     ordersEvent => TABLE orders_cdc_fs PARTITION BY transaction_id,
     orderItemsEvent => TABLE order_items_cdc_fs PARTITION BY transaction_id,
     transactionEvent => TABLE transaction_events_fs PARTITION BY id,
-    uid => 'multitenant-spanout-fs'
+    uid => 'multitenant-denormalizer-fs'
 );

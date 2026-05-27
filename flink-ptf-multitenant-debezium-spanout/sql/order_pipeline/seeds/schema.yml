@@ -1,0 +1,96 @@
+version: 2
+
+seeds:
+  - name: tenant_routes
+    description: "Tenant registry used to generate per-tenant routing DML."
+    columns:
+      - name: tenant_id
+        description: "Tenant identifier used in mt_orders.tenant_id filter."
+        data_tests:
+          - not_null
+          - unique
+      - name: target_table
+        description: "Optional override sink table name. Default is mt_<tenant>_orders when null."
+
+  - name: mt_orders_cdc
+    description: >
+      Flattened seed for cc-flink mt_orders_cdc DDL (01_ddl_orders_cdc.sql).
+      Maps to ROW columns: before, after, source, transaction; plus op, ts_ms, transaction_id.
+      Rows from test-data/debezium/orders.json and cc-flink/08_insert_mt_orders_cdc.sql.
+    columns:
+      - name: after_id
+        description: "after.id"
+        data_tests:
+          - not_null
+      - name: after_tenant_id
+        description: "after.tenant_id"
+        data_tests:
+          - not_null
+      - name: op
+        description: "Debezium op (c/u/d/r)."
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['c', 'u', 'd', 'r']
+      - name: transaction_id
+        description: "transaction.id (computed column in Flink DDL)."
+        data_tests:
+          - not_null
+
+  - name: mt_order_items_cdc
+    description: >
+      Flattened seed for cc-flink mt_order_items_cdc DDL (02_ddl_order_items_cdc.sql).
+      Rows from test-data/debezium/order_items.json and cc-flink/09_insert_mt_order_items_cdc.sql.
+    columns:
+      - name: after_id
+        description: "after.id"
+        data_tests:
+          - not_null
+      - name: after_tenant_id
+        description: "after.tenant_id"
+        data_tests:
+          - not_null
+      - name: after_order_id
+        description: "after.order_id"
+        data_tests:
+          - not_null
+      - name: op
+        data_tests:
+          - not_null
+      - name: transaction_id
+        data_tests:
+          - not_null
+
+  - name: mt_transaction_events
+    description: >
+      Seed for cc-flink mt_transaction_events DDL (03_ddl_transaction_events.sql).
+      Rows from test-data/debezium/transaction.json and cc-flink/10_insert_transaction_events.sql.
+    columns:
+      - name: status
+        description: "BEGIN or END."
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['BEGIN', 'END']
+      - name: id
+        description: "Transaction id (same id for BEGIN and END rows)."
+        data_tests:
+          - not_null
+      - name: ts_ms
+        data_tests:
+          - not_null
+
+  - name: mt_transaction_event_data_collections
+    description: >
+      Normalized ARRAY<ROW<data_collection, event_count>> elements for END transaction events.
+      Join to mt_transaction_events on id = transaction_id where status = END.
+    columns:
+      - name: transaction_id
+        data_tests:
+          - not_null
+      - name: data_collection
+        data_tests:
+          - not_null
+      - name: event_count
+        data_tests:
+          - not_null

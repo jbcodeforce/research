@@ -1,0 +1,22 @@
+
+version: 2
+
+models:
+  - name: mt_orders_denormalized
+    description: "Denormalized orders from CDC envelopes (one row per order with line_items array)."
+    columns:
+      - name: tenant_id
+        description: "Tenant identifier."
+        data_tests:
+          - not_null
+      - name: transaction_id
+        description: "Debezium transaction id."
+        data_tests:
+          - not_null
+      - name: order_id
+        description: "Order primary key within tenant."
+        data_tests:
+          - not_null
+      - name: line_items
+        description: "Nested array of line item rows (product_id, quantity, unit_price)."
+

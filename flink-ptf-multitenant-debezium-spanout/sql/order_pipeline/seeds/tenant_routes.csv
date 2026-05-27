@@ -1,0 +1,3 @@
+tenant_id,target_table
+acme,mt_acme_orders
+globex,mt_globex_orders

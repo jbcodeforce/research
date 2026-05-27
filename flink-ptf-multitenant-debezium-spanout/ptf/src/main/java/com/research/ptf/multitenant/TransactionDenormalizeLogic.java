@@ -5,17 +5,15 @@ import java.util.List;
 import org.apache.flink.types.Row;
 
 /**
- * Testable state machine for multi-tenant Debezium transaction fan-out. Field positions match the
- * {@code @DataTypeHint} schemas on {@link MultiTenantTransactionSpanOut#eval}.
+ * Testable state machine for multi-tenant Debezium transaction denormalization. Same completion
+ * rules as {@code DebeziumTransactionDenormalizer}; output is one order row with nested line items.
  */
-public final class TransactionSpanOutLogic {
-
-  public static final String TARGET_ORDERS = "orders";
-  public static final String TARGET_ORDER_ITEMS = "order_items";
+public final class TransactionDenormalizeLogic {
 
   // orders.after: id, tenant_id, customer_id, status, total_amount
   private static final int ORDERS_AFTER_ID = 0;
   private static final int ORDERS_AFTER_TENANT_ID = 1;
+  private static final int ORDERS_AFTER_CUSTOMER_ID = 2;
   private static final int ORDERS_AFTER_STATUS = 3;
   private static final int ORDERS_AFTER_TOTAL = 4;
 
@@ -25,38 +23,26 @@ public final class TransactionSpanOutLogic {
   private static final int ITEMS_AFTER_QUANTITY = 4;
   private static final int ITEMS_AFTER_UNIT_PRICE = 5;
 
-  // transaction row on CDC events: id at index 0
   private static final int CDC_TX_ID = 0;
-
-  // transaction boundary: status, id, ts_ms, event_count
   private static final int BOUNDARY_STATUS = 0;
   private static final int BOUNDARY_ID = 1;
   private static final int BOUNDARY_EVENT_COUNT = 3;
 
-  private TransactionSpanOutLogic() {}
+  private TransactionDenormalizeLogic() {}
 
-  /** Mutable per-transaction buffer. */
+  /** Mutable per-transaction buffer (all fields non-final for Flink @StateHint POJO). */
   public static class TransactionState {
     public String tenantId;
     public Long orderId;
+    public Long customerId;
     public String status;
     public Double totalAmount;
     public Integer expectedEventCount;
     public int receivedEventCount;
     public boolean endEventReceived;
-    public final List<LineItem> lineItems = new ArrayList<>();
-  }
+    public List<LineItem> lineItems = new ArrayList<>();
 
-  public static class LineItem {
-    public final long productId;
-    public final int quantity;
-    public final double unitPrice;
-
-    public LineItem(long productId, int quantity, double unitPrice) {
-      this.productId = productId;
-      this.quantity = quantity;
-      this.unitPrice = unitPrice;
-    }
+    public TransactionState() {}
   }
 
   /** Applies a transaction boundary event (BEGIN ignored; END sets expected count). */
@@ -83,6 +69,7 @@ public final class TransactionSpanOutLogic {
     if (after != null) {
       state.tenantId = (String) after.getField(ORDERS_AFTER_TENANT_ID);
       state.orderId = ((Number) after.getField(ORDERS_AFTER_ID)).longValue();
+      state.customerId = ((Number) after.getField(ORDERS_AFTER_CUSTOMER_ID)).longValue();
       state.status = (String) after.getField(ORDERS_AFTER_STATUS);
       state.totalAmount = ((Number) after.getField(ORDERS_AFTER_TOTAL)).doubleValue();
     }
@@ -115,34 +102,18 @@ public final class TransactionSpanOutLogic {
         && state.receivedEventCount == state.expectedEventCount;
   }
 
-  /**
-   * Builds fan-out rows for a completed transaction: one orders row plus one row per line item.
-   *
-   * @param transactionId Debezium transaction id from the completing event path
-   */
-  public static List<SpanOutEvent> buildSpanOutEvents(String transactionId, TransactionState state) {
-    List<SpanOutEvent> out = new ArrayList<>();
-    SpanOutEvent ordersRow = new SpanOutEvent();
-    ordersRow.transaction_id = transactionId;
-    ordersRow.tenant_id = state.tenantId;
-    ordersRow.target_collection = TARGET_ORDERS;
-    ordersRow.order_id = state.orderId;
-    ordersRow.status = state.status;
-    ordersRow.total_amount = state.totalAmount;
-    out.add(ordersRow);
-
-    for (LineItem item : state.lineItems) {
-      SpanOutEvent lineRow = new SpanOutEvent();
-      lineRow.transaction_id = transactionId;
-      lineRow.tenant_id = state.tenantId;
-      lineRow.target_collection = TARGET_ORDER_ITEMS;
-      lineRow.order_id = state.orderId;
-      lineRow.product_id = item.productId;
-      lineRow.quantity = item.quantity;
-      lineRow.unit_price = item.unitPrice;
-      out.add(lineRow);
-    }
-    return out;
+  /** Builds one denormalized order row for a completed transaction. */
+  public static DenormalizedOrder buildDenormalizedOrder(
+      String transactionId, TransactionState state) {
+    DenormalizedOrder result = new DenormalizedOrder();
+    result.transaction_id = transactionId;
+    result.tenant_id = state.tenantId;
+    result.order_id = state.orderId;
+    result.customer_id = state.customerId;
+    result.status = state.status;
+    result.total_amount = state.totalAmount;
+    result.line_items = state.lineItems.toArray(new LineItem[0]);
+    return result;
   }
 
   /** Resolves transaction id from whichever input row is non-null. */

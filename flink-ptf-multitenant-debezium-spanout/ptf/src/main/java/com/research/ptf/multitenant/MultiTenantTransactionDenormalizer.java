@@ -2,7 +2,6 @@ package com.research.ptf.multitenant;
 
 import static org.apache.flink.table.annotation.ArgumentTrait.SET_SEMANTIC_TABLE;
 
-import java.util.List;
 import org.apache.flink.table.annotation.ArgumentHint;
 import org.apache.flink.table.annotation.DataTypeHint;
 import org.apache.flink.table.annotation.StateHint;
@@ -10,30 +9,26 @@ import org.apache.flink.table.functions.ProcessTableFunction;
 import org.apache.flink.types.Row;
 
 /**
- * PTF that fans out completed Debezium transactions into per-collection rows tagged with tenant_id.
- *
- * <p>Inverse of DebeziumTransactionDenormalizer: many inputs (orders, order_items, transaction END)
- * produce multiple output rows (one orders header + one row per line item) after the transaction
- * completes.
+ * Denormalizes multi-tenant Debezium CDC transactions into one order row per transaction, with nested
+ * {@code line_items}. 
+ * <ul>
+ *   <li> Denormalizing CDC events
+ *   <li>Building transaction-consistent snapshots
+ *   <li>Aggregating multi-table database transactions
+ *   <li>Creating materialized views from CDC streams
+ *   <li>Event-driven architectures requiring consistent transaction boundaries
+ * </ul>
  */
-public class MultiTenantTransactionSpanOut
-    extends ProcessTableFunction<SpanOutEvent> {
-
-  /** Alias for state type used in tests and PTF. */
-  public static class TransactionState extends TransactionSpanOutLogic.TransactionState {}
+public class MultiTenantTransactionDenormalizer
+    extends ProcessTableFunction<DenormalizedOrder> {
 
   /**
-   * Processes CDC events from orders, order_items, and the Debezium transaction topic.
-   *
-   * @param ctx Flink context for state cleanup
-   * @param state per-transaction buffer
-   * @param ordersEvent CDC from orders table (nullable per call)
-   * @param orderItemsEvent CDC from order_items table (nullable per call)
-   * @param transactionEvent BEGIN/END from transaction topic (nullable per call)
+   * Buffers orders, order_items, and transaction END events until the transaction completes, then
+   * emits a single {@link DenormalizedOrder}.
    */
   public void eval(
       Context ctx,
-      @StateHint(ttl = "1 hour") TransactionState state,
+      @StateHint(ttl = "1 hour") TransactionDenormalizeLogic.TransactionState state,
       @ArgumentHint(
               value = SET_SEMANTIC_TABLE,
               type =
@@ -54,22 +49,18 @@ public class MultiTenantTransactionSpanOut
           Row transactionEvent)
       throws Exception {
 
-    TransactionSpanOutLogic.applyTransactionEvent(state, transactionEvent);
-    TransactionSpanOutLogic.applyOrdersEvent(state, ordersEvent);
-    TransactionSpanOutLogic.applyOrderItemsEvent(state, orderItemsEvent);
+    TransactionDenormalizeLogic.applyTransactionEvent(state, transactionEvent);
+    TransactionDenormalizeLogic.applyOrdersEvent(state, ordersEvent);
+    TransactionDenormalizeLogic.applyOrderItemsEvent(state, orderItemsEvent);
 
-    if (!TransactionSpanOutLogic.isComplete(state)) {
+    if (!TransactionDenormalizeLogic.isComplete(state)) {
       return;
     }
 
     String transactionId =
-        TransactionSpanOutLogic.resolveTransactionId(
+        TransactionDenormalizeLogic.resolveTransactionId(
             ordersEvent, orderItemsEvent, transactionEvent);
-    List<SpanOutEvent> events =
-        TransactionSpanOutLogic.buildSpanOutEvents(transactionId, state);
-    for (SpanOutEvent event : events) {
-      collect(event);
-    }
+    collect(TransactionDenormalizeLogic.buildDenormalizedOrder(transactionId, state));
     ctx.clearAll();
   }
 }

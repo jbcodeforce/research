@@ -4,11 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.List;
 import org.apache.flink.types.Row;
 import org.junit.jupiter.api.Test;
 
-class TransactionSpanOutLogicTest {
+class TransactionDenormalizeLogicTest {
 
   private static Row ordersEvent(
       String tenantId, long id, String status, double totalAmount, String txId) {
@@ -30,54 +29,53 @@ class TransactionSpanOutLogicTest {
 
   @Test
   void isComplete_requiresEndAndMatchingEventCount() {
-    TransactionSpanOutLogic.TransactionState state =
-        new TransactionSpanOutLogic.TransactionState();
-    assertFalse(TransactionSpanOutLogic.isComplete(state));
+    TransactionDenormalizeLogic.TransactionState state =
+        new TransactionDenormalizeLogic.TransactionState();
+    assertFalse(TransactionDenormalizeLogic.isComplete(state));
 
-    TransactionSpanOutLogic.applyTransactionEvent(state, endEvent("tx-1", 2));
-    assertFalse(TransactionSpanOutLogic.isComplete(state));
+    TransactionDenormalizeLogic.applyTransactionEvent(state, endEvent("tx-1", 2));
+    assertFalse(TransactionDenormalizeLogic.isComplete(state));
 
-    TransactionSpanOutLogic.applyOrdersEvent(
+    TransactionDenormalizeLogic.applyOrdersEvent(
         state, ordersEvent("acme", 1001L, "pending", 100.0, "tx-1"));
-    assertFalse(TransactionSpanOutLogic.isComplete(state));
+    assertFalse(TransactionDenormalizeLogic.isComplete(state));
 
-    TransactionSpanOutLogic.applyOrderItemsEvent(
+    TransactionDenormalizeLogic.applyOrderItemsEvent(
         state, orderItemsEvent("acme", 777L, 2, 50.0, "tx-1"));
-    assertTrue(TransactionSpanOutLogic.isComplete(state));
+    assertTrue(TransactionDenormalizeLogic.isComplete(state));
   }
 
   @Test
-  void buildSpanOutEvents_emitsOrdersPlusLineItems() {
-    TransactionSpanOutLogic.TransactionState state =
-        new TransactionSpanOutLogic.TransactionState();
-    TransactionSpanOutLogic.applyOrdersEvent(
+  void buildDenormalizedOrder_emitsSingleRowWithLineItemsArray() {
+    TransactionDenormalizeLogic.TransactionState state =
+        new TransactionDenormalizeLogic.TransactionState();
+    TransactionDenormalizeLogic.applyOrdersEvent(
         state, ordersEvent("acme", 1001L, "confirmed", 299.99, "12345:99"));
-    TransactionSpanOutLogic.applyOrderItemsEvent(
+    TransactionDenormalizeLogic.applyOrderItemsEvent(
         state, orderItemsEvent("acme", 777L, 2, 99.99, "12345:99"));
-    TransactionSpanOutLogic.applyOrderItemsEvent(
+    TransactionDenormalizeLogic.applyOrderItemsEvent(
         state, orderItemsEvent("acme", 888L, 1, 100.01, "12345:99"));
-    TransactionSpanOutLogic.applyTransactionEvent(state, endEvent("12345:99", 3));
+    TransactionDenormalizeLogic.applyTransactionEvent(state, endEvent("12345:99", 3));
 
-    List<SpanOutEvent> events =
-        TransactionSpanOutLogic.buildSpanOutEvents("12345:99", state);
+    DenormalizedOrder order =
+        TransactionDenormalizeLogic.buildDenormalizedOrder("12345:99", state);
 
-    assertEquals(3, events.size());
-    assertEquals(TransactionSpanOutLogic.TARGET_ORDERS, events.get(0).target_collection);
-    assertEquals("acme", events.get(0).tenant_id);
-    assertEquals(1001L, events.get(0).order_id);
-    assertEquals("confirmed", events.get(0).status);
-
-    assertEquals(TransactionSpanOutLogic.TARGET_ORDER_ITEMS, events.get(1).target_collection);
-    assertEquals(777L, events.get(1).product_id);
-    assertEquals(TransactionSpanOutLogic.TARGET_ORDER_ITEMS, events.get(2).target_collection);
-    assertEquals(888L, events.get(2).product_id);
+    assertEquals("12345:99", order.transaction_id);
+    assertEquals("acme", order.tenant_id);
+    assertEquals(1001L, order.order_id);
+    assertEquals(42L, order.customer_id);
+    assertEquals("confirmed", order.status);
+    assertEquals(299.99, order.total_amount);
+    assertEquals(2, order.line_items.length);
+    assertEquals(777L, order.line_items[0].product_id);
+    assertEquals(888L, order.line_items[1].product_id);
   }
 
   @Test
   void applyOrdersEvent_updatesTenantAndIncrementsCount() {
-    TransactionSpanOutLogic.TransactionState state =
-        new TransactionSpanOutLogic.TransactionState();
-    TransactionSpanOutLogic.applyOrdersEvent(
+    TransactionDenormalizeLogic.TransactionState state =
+        new TransactionDenormalizeLogic.TransactionState();
+    TransactionDenormalizeLogic.applyOrdersEvent(
         state, ordersEvent("globex", 2001L, "pending", 50.0, "tx-2"));
     assertEquals("globex", state.tenantId);
     assertEquals(1, state.receivedEventCount);
@@ -90,6 +88,6 @@ class TransactionSpanOutLogicTest {
     Row orders = ordersEvent("acme", 1L, "x", 1.0, "from-orders");
     assertEquals(
         "from-tx-topic",
-        TransactionSpanOutLogic.resolveTransactionId(orders, null, tx));
+        TransactionDenormalizeLogic.resolveTransactionId(orders, null, tx));
   }
 }

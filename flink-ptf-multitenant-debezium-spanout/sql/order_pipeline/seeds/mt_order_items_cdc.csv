@@ -1,0 +1,4 @@
+before_id,before_order_id,before_product_id,before_quantity,before_unit_price,after_id,after_tenant_id,after_order_id,after_product_id,after_quantity,after_unit_price,source_version,source_connector,source_name,source_ts_ms,source_db,source_schema,source_table,source_tx_id,source_lsn,source_xmin,op,ts_ms,transaction_id,transaction_total_order,transaction_data_collection_order
+,,,,,5001,acme,1001,777,2,99.99,2.5.0.Final,postgresql,inventory,1718294400124,shop,public,order_items,12345,98765440,,c,1718294400210,12345:98765432,2,1
+,,,,,5002,acme,1001,888,1,100.01,2.5.0.Final,postgresql,inventory,1718294400125,shop,public,order_items,12345,98765448,,c,1718294400220,12345:98765432,3,2
+,,,,,6001,globex,2001,999,1,149.50,2.5.0.Final,postgresql,inventory,1718294500124,shop,public,order_items,67890,11111120,,c,1718294500210,67890:11111111,2,1

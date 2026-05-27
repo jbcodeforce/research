@@ -1,9 +1,6 @@
-DROP TABLE IF EXISTS order_items_cdc;
-
-CREATE TABLE order_items_cdc (
+CREATE TABLE mt_order_items_cdc (
     `before` ROW<
         id BIGINT,
-        tenant_id STRING,
         order_id BIGINT,
         product_id BIGINT,
         quantity INT,
@@ -30,12 +27,4 @@ CREATE TABLE order_items_cdc (
     ts_ms BIGINT,
     `transaction` ROW<id STRING, total_order BIGINT, data_collection_order BIGINT>,
     transaction_id AS `transaction`.id
-) WITH (
-    'connector' = 'kafka',
-    'topic' = 'mt.public.order_items',
-    'properties.bootstrap.servers' = '${BOOTSTRAP_SERVERS}',
-    'properties.group.id' = 'mt-spanout-items',
-    'scan.startup.mode' = 'earliest-offset',
-    'value.format' = 'json',
-    'value.json.ignore-parse-errors' = 'true'
 );

@@ -1,0 +1,5 @@
+transaction_id,data_collection,event_count
+12345:98765432,public.orders,2
+12345:98765432,public.order_items,2
+67890:11111111,public.orders,1
+67890:11111111,public.order_items,1

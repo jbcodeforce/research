@@ -27,5 +27,5 @@ echo "==> Filesystem SQL demo (batch)"
 docker compose exec -T sql-client bin/sql-client.sh -f /opt/flink/sql/07_filesystem_demo.sql
 
 echo ""
-echo "Done. For Kafka streaming job, exec sql-client and run 00_run_all.local.sql then 06_dml_span_out.sql"
-echo "Verify sink: docker compose exec broker kafka-console-consumer --bootstrap-server broker:29092 --topic mt.span_out.v1 --from-beginning --max-messages 20"
+echo "Done. For Kafka streaming job, exec sql-client and run 00_run_all.local.sql then 06_dml_denormalized_orders.sql"
+echo "Verify sink: docker compose exec broker kafka-console-consumer --bootstrap-server broker:29092 --topic mt.orders.denormalized.v1 --from-beginning --max-messages 10"
