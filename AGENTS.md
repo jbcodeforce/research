@@ -17,6 +17,10 @@ Your final commit should include just that folder and selected items:
 * for Java project use maven and not graddle.
 * comment functions with the intent.
 
+## Flink specific
+* Prefer Confluent Cloud for Flink deployment using dbt and dbt-confluent for managing flink sql deployment.
+* Second choice will be Apache Flink OSS.
+
 ## Update project main readme 
 After each research implementation add a new section to reference the new research intent, and scope
 

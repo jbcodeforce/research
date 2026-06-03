@@ -1,0 +1,31 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "flink-sql-aggregation-state-handoff"
+version = "0.1.0"
+description = "Confluent Cloud Flink SQL aggregation state handoff research utilities"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "confluent-kafka>=2.3.0",
+    "python-dotenv>=1.0.0",
+    "requests>=2.31.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[project.scripts]
+state-handoff-produce = "state_handoff.produce:main"
+state-handoff-capture-offsets = "state_handoff.capture_offsets:main"
+state-handoff-validate = "state_handoff.validate:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/state_handoff"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

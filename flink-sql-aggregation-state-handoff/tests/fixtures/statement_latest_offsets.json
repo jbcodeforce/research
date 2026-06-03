@@ -1,0 +1,15 @@
+{
+  "status": {
+    "phase": "STOPPED",
+    "latest_offsets": {
+      "device_events": {
+        "0": 42,
+        "1": 17,
+        "2": 0
+      },
+      "agg_sink_v1": {
+        "0": 10
+      }
+    }
+  }
+}

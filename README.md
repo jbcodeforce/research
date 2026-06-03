@@ -22,3 +22,6 @@ Each folder includes its own research project. I will use different Agents: Curs
 ## [Flink statement troubleshooting agent](flink-statement-troubleshooting/README.md)
 — Agno Team CLI (`flink-triage`) for Confluent Cloud Flink SQL triage only; two-step flow (verify tooling → deploy on CC); perf-testing SQL fixture from flink-studies; see [DEPLOYMENT.md](flink-statement-troubleshooting/docs/DEPLOYMENT.md).
 
+## [Flink SQL aggregation state handoff](flink-sql-aggregation-state-handoff/README.md)
+— Confluent Cloud study: user-operable aggregation handoff via upsert sink bootstrap + `specific-offsets` (savepoints not exposed to CC end users); stop global keyed aggregation, deploy new statement to `sink_v2` without full source replay; Python producer/validator, CC deploy script; see [SPEC.md](flink-sql-aggregation-state-handoff/SPEC.md) and [docs/PATTERNS.md](flink-sql-aggregation-state-handoff/docs/PATTERNS.md).
+
