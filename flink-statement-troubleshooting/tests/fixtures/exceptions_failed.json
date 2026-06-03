@@ -1,0 +1,8 @@
+{
+  "exceptions": [
+    {
+      "message": "SQL parse error: Encountered \"INVALID\" at line 1, column 20.",
+      "stacktrace": "org.apache.flink.table.api.SqlParserException: ..."
+    }
+  ]
+}

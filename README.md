@@ -19,3 +19,6 @@ Each folder includes its own research project. I will use different Agents: Curs
 ## [Multi-tenant Debezium denormalizer PTF](flink-ptf-multitenant-debezium-spanout/README.md)
 — Flink 2.2 ProcessTableFunction (same use case as DebeziumTransactionDenormalizer) that emits one order row per transaction with `line_items[]` and `tenant_id` for per-tenant routing; mock Debezium producer, local Docker, Confluent Cloud Flink; see [SPEC.md](flink-ptf-multitenant-debezium-spanout/SPEC.md).
 
+## [Flink statement troubleshooting agent](flink-statement-troubleshooting/README.md)
+— Agno Team CLI (`flink-triage`) for Confluent Cloud Flink SQL triage only; two-step flow (verify tooling → deploy on CC); perf-testing SQL fixture from flink-studies; see [DEPLOYMENT.md](flink-statement-troubleshooting/docs/DEPLOYMENT.md).
+

@@ -1,0 +1,10 @@
+{
+  "name": "perf-dml-broken",
+  "status": {
+    "phase": "FAILED",
+    "detail": "SQL parse error near 'INVALID'"
+  },
+  "spec": {
+    "compute_pool_id": "lfcp-example"
+  }
+}

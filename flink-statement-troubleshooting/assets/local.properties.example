@@ -1,0 +1,15 @@
+# Bootstrap and Kafka settings for perf-testing assets
+
+BOOTSTRAP_SERVERS=pkc-xxxxx.region.aws.confluent.cloud:9092
+KAFKA_API_KEY=
+KAFKA_API_SECRET=
+
+# Flink statement names (used by deploy_statements.sh)
+STATEMENT_DDL_SOURCE=perf-ddl-source
+STATEMENT_DDL_SINK=perf-ddl-sink
+STATEMENT_DML_PASSTHROUGH=perf-dml-passthrough
+STATEMENT_DML_BROKEN=perf-dml-broken
+
+# Topics (match flink-studies perf-testing producer)
+INPUT_TOPIC=perf-input
+OUTPUT_TOPIC=perf-output

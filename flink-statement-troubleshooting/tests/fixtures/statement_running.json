@@ -1,0 +1,10 @@
+{
+  "name": "perf-dml-passthrough",
+  "status": {
+    "phase": "RUNNING",
+    "detail": "Statement is running."
+  },
+  "spec": {
+    "compute_pool_id": "lfcp-example"
+  }
+}

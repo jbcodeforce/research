@@ -1,0 +1,34 @@
+[
+  {
+    "name": "get_statement_status",
+    "description": "Return statement JSON from Flink REST."
+  },
+  {
+    "name": "get_statement_exceptions",
+    "description": "Return recent exceptions for a statement."
+  },
+  {
+    "name": "check_statement_health",
+    "description": "Aggregate health check from status and phase."
+  },
+  {
+    "name": "query_statement_metrics",
+    "description": "Query all standard Flink statement metrics."
+  },
+  {
+    "name": "query_pool_cfu",
+    "description": "Query current CFUs for a compute pool."
+  },
+  {
+    "name": "detect_statement_issues",
+    "description": "Rule-based issue detection from status and metrics."
+  },
+  {
+    "name": "get_statement_profile",
+    "description": "Profiler placeholder \u2014 full task graph requires Confluent MCP or Console."
+  },
+  {
+    "name": "run_triage",
+    "description": "Full triage: collect evidence and return TriageReport as dict."
+  }
+]
