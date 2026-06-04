@@ -2,7 +2,55 @@
 
 ## Problem Statement
 
-Source database is multi tenants within same tables. The problem is to fan-out content to multiple tables, one per tenant, but keep consistency on the create records. As an example we use orders and order_items per tenant:
+The source architecture include d Databases with t tables each. Debezium CDC inject data to topics from those database. The architecture decision is to use Debezium into just 3 Kafka topics (DML, DDL, and Transactions). Debezium creates a topic for every single table. To collapse them into three global topics, you must combine Kafka Connect Single Message Transformations (SMTs) for routing with a Subject Name Strategy that prevents schema conflicts. Using a single DML topic using Kafka's default TopicNameStrategy, the Schema Registry will immediately reject the messages due to schema backward-incompatibility. Confluent has the `io.confluent.kafka.serializers.subject.TopicRecordNamingStrategy`, where the Schema Registry registers schemas based on a combination of the Topic Name and the Fully Qualified Record Name (e.g., global-dml-topic-server.database.table.Value). This allows thousands of structurally unique table schemas to coexist peacefully within the exact same Kafka topic.
+
+```sh
+value.converter=io.confluent.connect.avro.AvroConverter
+value.converter.schema.registry.url=http://localhost:8081
+value.converter.value.subject.name.strategy=io.confluent.kafka.serializers.subject.TopicRecordNamingStrategy
+```
+
+* The DML Topic (Data Changes): Debezium automatically emits row-level changes to topics named <topic.prefix>.<database>.<table_name>. We can intercept anything matching this pattern and force it into global-dml-topic.
+* The DDL Topic (Schema Changes): Debezium captures schema changes and writes them to a topic named exactly after the <topic.prefix>. We will route these to global-ddl-topic.
+* The Transaction Topic (DB Transactions): By setting provide.transaction.metadata=true, Debezium emits transaction boundaries to <topic.prefix>.transaction. We will route these to global-tx-topic.
+
+Here is an example of potential Kafka Connector config:
+
+```sh
+# --- Basic Connector Config ---
+connector.class=io.debezium.connector.mysql.MySqlConnector
+tasks.max=1
+topic.prefix=cdc_deploy_01
+
+# --- Enable Transaction Metadata ---
+provide.transaction.metadata=true
+
+# --- SMT Routing Configuration ---
+transforms=routeDML,routeTX,routeDDL
+
+# 1. Route Transactions (.transaction suffix)
+transforms.routeTX.type=org.apache.kafka.connect.transforms.RegexRouter
+transforms.routeTX.regex=^cdc_deploy_01\\.transaction$
+transforms.routeTX.replacement=global-tx-topic
+
+# 2. Route DML (Matches prefix.database.table, ignores transaction)
+# This regex looks for two distinct namespace dots after the prefix
+transforms.routeDML.type=org.apache.kafka.connect.transforms.RegexRouter
+transforms.routeDML.regex=^cdc_deploy_01\\.(?!transaction)([^.]+)\\.([^.]+)$
+transforms.routeDML.replacement=global-dml-topic
+
+# 3. Route DDL (Matches the bare topic prefix where schema changes go)
+transforms.routeDDL.type=org.apache.kafka.connect.transforms.RegexRouter
+transforms.routeDDL.regex=^cdc_deploy_01$
+transforms.routeDDL.replacement=global-ddl-topic
+```
+
+If the number of database and tables grow, do not use one kafka connector, but multiple of them and configure `database.include.list` or `table.include.list`. Always measure the JVM heap of the connector.
+
+Tune the number of partitions for the DML topic.
+
+### Flink requirements 
+The problem is to fan-out the records to multiple tables, one per tenant, but keep consistency on the create records. As an example we use orders and order_items per tenant:
 
 ![](./docs/problem.drawio.png)
 
