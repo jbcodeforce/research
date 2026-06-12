@@ -1,5 +1,11 @@
 # Multi-tenant Debezium denormalizer PTF research
 
+* accross tenants there will be the same schema table. 
+* T=500MBp/s cross 1500 topics
+* Tx at 5s = 80 changes within a tx. 
+* Datasets: with 
+* Sizing exercise with mock data
+
 ## Problem Statement
 
 The source architecture include d Databases with t tables each. Debezium CDC inject data to topics from those database. The architecture decision is to use Debezium into just 3 Kafka topics (DML, DDL, and Transactions). Debezium creates a topic for every single table. To collapse them into three global topics, you must combine Kafka Connect Single Message Transformations (SMTs) for routing with a Subject Name Strategy that prevents schema conflicts. Using a single DML topic using Kafka's default TopicNameStrategy, the Schema Registry will immediately reject the messages due to schema backward-incompatibility. Confluent has the `io.confluent.kafka.serializers.subject.TopicRecordNamingStrategy`, where the Schema Registry registers schemas based on a combination of the Topic Name and the Fully Qualified Record Name (e.g., global-dml-topic-server.database.table.Value). This allows thousands of structurally unique table schemas to coexist peacefully within the exact same Kafka topic.
@@ -50,14 +56,14 @@ If the number of database and tables grow, do not use one kafka connector, but m
 Tune the number of partitions for the DML topic.
 
 ### Flink requirements 
-The problem is to fan-out the records to multiple tables, one per tenant, but keep consistency on the create records. As an example we use orders and order_items per tenant:
+
+The problem is to fan-out the records to multiple tables, one per tenant, but keep consistency on the created records. As an example we use orders and order_items tables from a tenant database:
 
 ![](./docs/problem.drawio.png)
 
 The architecture leverage Kafka and Flink to implement the medallion architecture:
 
 ![](./docs/kafka-flink-fan-out-pertenant.drawio.png)
-
 
 In modern architecture, [Debezium CDC](https://debezium.io/documentation/reference/stable/connectors/postgresql.html) is used to inject table rows into Kafka topic as records. Committed rows are injected to Kafka topic. The pattern is to have one topic per source SQL table.
 

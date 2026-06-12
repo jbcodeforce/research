@@ -22,6 +22,15 @@ Each folder includes its own research project. I will use different Agents: Curs
 ## [Flink statement troubleshooting agent](flink-statement-troubleshooting/README.md)
 — Agno Team CLI (`flink-triage`) for Confluent Cloud Flink SQL triage only; two-step flow (verify tooling → deploy on CC); perf-testing SQL fixture from flink-studies; see [DEPLOYMENT.md](flink-statement-troubleshooting/docs/DEPLOYMENT.md).
 
+## [ksqlDB to Flink SQL migration skill](ksql-to-flink-skill/README.md)
+— Portable agent skill and Agno/oMLX harness for ksqlDB → Confluent Cloud Flink SQL; fixtures from `flink_project_demos/ksql_tutorial`; see [SPEC.md](ksql-to-flink-skill/SPEC.md).
+
+## [Spark SQL to Flink SQL migration skill](spark-to-flink-skill/README.md)
+— Portable agent skill (`SKILL.md`) and Agno/oMLX harness for migrating Spark SQL to Confluent Cloud Flink SQL; golden pairs from `flink_project_demos/customer_360`; see [SPEC.md](spark-to-flink-skill/SPEC.md).
+
+## [Flink skill harness common library](flink-skill-common/README.md)
+— Shared Python package (`flink_skill_common`) used by the ksql-to-flink and spark-to-flink harnesses: output parsing, golden comparison, LLM config, MCP deploy, and Agno agent helpers.
+
 ## [Flink SQL aggregation state handoff](flink-sql-aggregation-state-handoff/README.md)
 — Confluent Cloud study: user-operable aggregation handoff via upsert sink bootstrap + `specific-offsets` (savepoints not exposed to CC end users); stop global keyed aggregation, deploy new statement to `sink_v2` without full source replay; Python producer/validator, CC deploy script; see [SPEC.md](flink-sql-aggregation-state-handoff/SPEC.md) and [docs/PATTERNS.md](flink-sql-aggregation-state-handoff/docs/PATTERNS.md).
 
