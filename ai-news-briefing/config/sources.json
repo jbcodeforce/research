@@ -1,0 +1,15 @@
+{
+  "feeds": [
+    { "name": "VentureBeat AI", "url": "https://venturebeat.com/category/ai/feed/" },
+    { "name": "Ars Technica AI", "url": "https://arstechnica.com/ai/feed/" },
+    { "name": "TechCrunch AI", "url": "https://techcrunch.com/category/artificial-intelligence/feed/" },
+    { "name": "The Verge AI", "url": "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml" },
+    { "name": "MIT Technology Review AI", "url": "https://www.technologyreview.com/topic/artificial-intelligence/feed" },
+    { "name": "OpenAI News", "url": "https://openai.com/news/rss.xml" },
+    { "name": "Google Research", "url": "https://blog.research.google/feeds/posts/default" },
+    { "name": "DeepMind Blog", "url": "https://deepmind.com/blog/feed/" },
+    { "name": "Hugging Face Blog", "url": "https://huggingface.co/blog/feed.xml" },
+    { "name": "AWS ML Blog", "url": "https://aws.amazon.com/blogs/machine-learning/feed/" },
+    { "name": "Simon Willison", "url": "https://simonwillison.net/atom/everything/" }
+  ]
+}
