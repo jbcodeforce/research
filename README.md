@@ -6,6 +6,14 @@ Each folder includes its own research project. I will use different Agents: Pi, 
 
 ## Using Pi and local LLm
 
+[See doc](https://pi.dev/docs/latest) 
+
+* `pi` to run it. or `pi update` to change verion
+* `/login` to select one of the models from `~/.pi/models.json`
+* 
+
+## [Research harness (Agno workflow)](research-harness/README.md)
+— Agno `Workflow` (plan → scaffold → code → present) that turns a topic into a git branch + formatted README/notes, following the repo's AGENTS.md conventions; pure, fully-tested deterministic core, offline stub-model tests.
 
 ## [Apache Iceberg + Flink (Docker POC)](apache-iceberg-poc/README.md)
 — local Flink 2.0, Iceberg REST catalog, MinIO; SQL scripts and quickstart-style flow.

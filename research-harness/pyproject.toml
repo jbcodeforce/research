@@ -1,0 +1,33 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "research-harness"
+version = "0.1.0"
+description = "Agentic research harness: an Agno Workflow of research, coding, and presentation agents that formalizes the per-research workflow in AGENTS.md"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "agno>=3.0,<4",
+    "openai>=1.40.0",
+    "pydantic>=2.0.0",
+    "python-dotenv>=1.0.0",
+    "typer>=0.12.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-mock>=3.14.0",
+]
+
+[project.scripts]
+research = "research_harness.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/research_harness"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
