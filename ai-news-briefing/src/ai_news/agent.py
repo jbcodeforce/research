@@ -17,7 +17,6 @@ import re
 from datetime import datetime, timezone
 
 from .models import Article, Briefing, BriefingItem, BriefingSection
-from .report import SourceStatus
 
 # Canonical section order drives both classification buckets and output order.
 # "Other" is intentionally excluded: items it would catch are rerouted to the

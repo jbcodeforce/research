@@ -22,8 +22,8 @@ class LLMConfig:
     as OMLX or Ollama. All values fall back to environment variables.
     """
 
-    base_url: str = "http://127.0.0.1:11434/v1"
-    model_id: str = "qwen2.5:latest"
+    base_url: str = "http://127.0.0.1:7999/v1"
+    model_id: str = "Ornith-1.5-9B-MLX-8bit"
     api_key: Optional[str] = None
     temperature: float = 0.0
     max_tokens: int = 4096
@@ -31,8 +31,8 @@ class LLMConfig:
     @classmethod
     def from_env(cls) -> "LLMConfig":
         return cls(
-            base_url=os.getenv("RESEARCH_LLM_BASE_URL", os.getenv("LLM_URL", "http://127.0.0.1:11434/v1")),
-            model_id=os.getenv("RESEARCH_LLM_MODEL", os.getenv("LLM_MODEL", "qwen2.5:latest")),
+            base_url=os.getenv("RESEARCH_LLM_BASE_URL", os.getenv("LLM_URL", "http://127.0.0.1:7999/v1")),
+            model_id=os.getenv("RESEARCH_LLM_MODEL", os.getenv("LLM_MODEL", "Ornith-1.5-9B-MLX-8bit")),
             api_key=os.getenv("OPENAI_API_KEY"),  # None disables auth (e.g. OMLX)
             temperature=float(os.getenv("RESEARCH_LLM_TEMPERATURE", "0.0")),
             max_tokens=int(os.getenv("RESEARCH_LLM_MAX_TOKENS", "4096")),
