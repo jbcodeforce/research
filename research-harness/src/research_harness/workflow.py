@@ -124,10 +124,10 @@ def _finalize(run: ResearchRun, project_path: Path, git_root: Path, conventions)
     repo.ensure_folder(".", root)
     readme_md = build_readme(run.plan, run.code or CodeResult(), run.presentation)
     notes_md = build_notes(run.plan, run.code or CodeResult(), run.presentation)
-    repo.write_file("README.md", readme_md, root)
-    repo.write_file("notes.md", notes_md, root)
+    repo.write_file(root, "README.md", readme_md)
+    repo.write_file(root, "notes.md", notes_md)
     section = build_root_readme_section(run.plan, run.code or CodeResult(), run.presentation)
-    repo.write_file("README.md", section + "\n", git_root)
+    repo.write_file(git_root, "README.md", section + "\n")
     repo.git_add(root, ["README.md", "notes.md"])
     sha = repo.git_commit(run.project_path, f"research: {run.topic}")
     run.git_commit_sha = sha
@@ -171,7 +171,7 @@ def run_research(topic: str, config: ProjectConfig, model: Optional[Model] = Non
     if model is None:
         model = build_model(config, stub_responses=stub_responses)
     git_root = config.git_root or config.project_path
-    run = ResearchRun.from_topic(topic)
+    run = ResearchRun.from_topic(config.research_name, topic)
     run.project_path = config.project_path
     run.plan = build_default_plan(run, config.conventions)
     run.status = ResearchPhase.PLAN
@@ -189,5 +189,5 @@ def build_default_plan(run: ResearchRun, conventions) -> ResearchPlan:
     """Create a default plan with folder/branch names derived from the topic."""
     from research_harness.state import slugify
 
-    slug = f"{conventions.git_branch_prefix}{slugify(run.topic)}"
+    slug = f"{conventions.git_branch_prefix}{slugify(run.research_name)}"
     return ResearchPlan(topic=run.topic, folder_name=slug, branch_name=slug)

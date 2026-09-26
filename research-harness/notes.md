@@ -53,7 +53,7 @@ for producing research in this repository with nice-looking markdown.
 ### Files planned
 - `config.py`, `state.py`, `tools/{repo,shell,markdown}.py`,
   `agents/{factory,researcher,coder,reporter}.py`, `workflow.py`,
-  `present.py`, `pipeline.py`, `cli.py`.
+  `present.py`, `pipeline.py`, `research_cli.py`.
 
 ### Open questions
 - OMLX provider base_url/key naming for a real local run (config reads env,

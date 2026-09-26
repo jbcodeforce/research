@@ -11,7 +11,7 @@ from typing import List, Optional
 
 from agno.agent import Agent
 from agno.models.base import Model
-from agno.models.openai.chat import OpenAIChat
+from agno.models.openai.like import OpenAILike
 
 from research_harness.config import HarnessConfig
 
@@ -29,7 +29,7 @@ def build_model(config: HarnessConfig, stub_response: Optional[str] = None, stub
     If ``stub_responses`` (a list) is given, a :class:`SequenceModel` is returned
     that pops a canned response per LLM call, so the whole workflow runs offline
     with per-step control (used by tests). Otherwise a real
-    OpenAI-compatible :class:`OpenAIChat` model is returned.
+    OpenAI-compatible :class:`OpenAILike` model is returned.
     """
     from research_harness.tools.stub import SequenceModel, StubModel
 
@@ -38,10 +38,10 @@ def build_model(config: HarnessConfig, stub_response: Optional[str] = None, stub
     if stub_response is not None:
         return StubModel(response=stub_response)
 
-    return OpenAIChat(
+    return OpenAILike(
         id=config.llm.model_id,
         base_url=config.llm.base_url,
-        api_key=config.llm.api_key or os.getenv("OPENAI_API_KEY"),
+        api_key=config.llm.api_key or os.getenv("LLM_API_KEY"),
         temperature=config.llm.temperature,
         max_tokens=config.llm.max_tokens,
     )

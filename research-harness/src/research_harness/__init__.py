@@ -23,11 +23,13 @@ from research_harness.tools.repo import (
     read_agents_md,
     write_file,
 )
+from research_harness.research_cli import app as cli_app
 from research_harness.workflow import build_default_plan
 
 __version__ = "0.1.0"
 
 __all__ = [
+    "cli_app",
     "HarnessConfig",
     "LLMConfig",
     "RepoConventions",

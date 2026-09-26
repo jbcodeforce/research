@@ -46,7 +46,7 @@ PRES = '{"notes_markdown":"## Notes","readme_markdown":"## Presentation","root_r
 
 
 def test_collect_structured_parses_all_three_steps():
-    run = ResearchRun.from_topic("weather forecast")
+    run = ResearchRun.from_topic("wf","weather forecast")
     run.project_path = None
     _collect_structured(run, [_step(PLAN), _step("scaffolded..."), _step(CODE), _step(PRES)])
     assert run.plan is not None and run.plan.topic == "weather forecast"
@@ -58,7 +58,7 @@ def test_collect_structured_parses_all_three_steps():
 def test_collect_structured_does_not_cross_wire_artifacts():
     # Even though CodeResult has no required fields, the presentation step must
     # still bind to presentation (not leak into code).
-    run = ResearchRun.from_topic("weather forecast")
+    run = ResearchRun.from_topic("wf", "weather forecast")
     run.project_path = None
     _collect_structured(run, [_step(PLAN), _step(CODE), _step(PRES)])
     assert run.plan.topic == "weather forecast"
@@ -67,7 +67,7 @@ def test_collect_structured_does_not_cross_wire_artifacts():
 
 
 def test_collect_structured_skips_non_json_steps():
-    run = ResearchRun.from_topic("weather forecast")
+    run = ResearchRun.from_topic("wf", "weather forecast")
     run.project_path = None
     _collect_structured(run, [_step("just a status string"), _step("no json here")])
     assert run.plan is None
@@ -76,7 +76,7 @@ def test_collect_structured_skips_non_json_steps():
 
 
 def test_collect_structured_empty_results():
-    run = ResearchRun.from_topic("weather forecast")
+    run = ResearchRun.from_topic("wf", "weather forecast")
     run.project_path = None
     _collect_structured(run, [])
     assert run.plan is None

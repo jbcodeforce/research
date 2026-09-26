@@ -22,7 +22,7 @@ def resolve(path: Union[str, Path], root: Path) -> Path:
     return (root / p).resolve()
 
 
-def write_file(path: Union[str, Path], content: str, root: Path) -> Path:
+def write_file(root: Path, path: Union[str, Path], content: str) -> Path:
     """Write ``content`` to ``path`` (relative to ``root``), creating parents."""
     target = resolve(path, root)
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -30,7 +30,7 @@ def write_file(path: Union[str, Path], content: str, root: Path) -> Path:
     return target
 
 
-def read_file(path: Union[str, Path], root: Path, default: str = "") -> str:
+def read_file(root: Path, path: Union[str, Path], default: str = "") -> str:
     """Read a text file relative to ``root``; returns ``default`` if missing."""
     p = resolve(path, root)
     if not p.is_file():
@@ -118,4 +118,4 @@ def read_agents_md(root: Path, default: str = "") -> str:
     git_root = _git_root(root)
     if git_root is None:
         return default
-    return read_file("AGENTS.md", git_root, default=default)
+    return read_file(git_root, "AGENTS.md", default=default)

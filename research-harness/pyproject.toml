@@ -23,7 +23,7 @@ dev = [
 ]
 
 [project.scripts]
-research = "research_harness.cli:main"
+research = "research_harness.research_cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/research_harness"]

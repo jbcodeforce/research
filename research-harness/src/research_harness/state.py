@@ -115,7 +115,7 @@ class PresentationResult(BaseModel):
 
 class ResearchRun(BaseModel):
     """Rolls up the outcome of a whole research investigation."""
-
+    research_name: str
     topic: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     plan: Optional[ResearchPlan] = None
@@ -131,7 +131,7 @@ class ResearchRun(BaseModel):
         return self.plan.folder_name if self.plan else "research"
 
     @classmethod
-    def from_topic(cls, topic: str) -> "ResearchRun":
+    def from_topic(cls, name: str, topic: str) -> "ResearchRun":
         """Build an empty run."""
-        return cls(topic=topic)
+        return cls(research_name=name, topic=topic)
 

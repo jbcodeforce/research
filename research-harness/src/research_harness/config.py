@@ -24,7 +24,7 @@ class LLMConfig:
 
     base_url: str = "http://127.0.0.1:7999/v1"
     model_id: str = "Ornith-1.5-9B-MLX-8bit"
-    api_key: Optional[str] = None
+    api_key: Optional[str] = "local-key"
     temperature: float = 0.0
     max_tokens: int = 4096
 
@@ -33,7 +33,7 @@ class LLMConfig:
         return cls(
             base_url=os.getenv("RESEARCH_LLM_BASE_URL", os.getenv("LLM_URL", "http://127.0.0.1:7999/v1")),
             model_id=os.getenv("RESEARCH_LLM_MODEL", os.getenv("LLM_MODEL", "Ornith-1.5-9B-MLX-8bit")),
-            api_key=os.getenv("OPENAI_API_KEY"),  # None disables auth (e.g. OMLX)
+            api_key=os.getenv("LLM_API_KEY"),
             temperature=float(os.getenv("RESEARCH_LLM_TEMPERATURE", "0.0")),
             max_tokens=int(os.getenv("RESEARCH_LLM_MAX_TOKENS", "4096")),
         )
@@ -43,7 +43,7 @@ class LLMConfig:
 class RepoConventions:
     """Naming and process conventions copied from this repo's AGENTS.md."""
 
-    git_branch_prefix: str = "research-"
+    git_branch_prefix: str = "rearcher-"
     git_commit_message: str = "research: <topic>"
     notes_filename: str = "notes.md"
     readme_filename: str = "README.md"
@@ -55,7 +55,7 @@ class RepoConventions:
 @dataclass
 class HarnessConfig:
     """Top-level configuration for a research run."""
-
+    research_name: str
     repo_root: Path
     git_root: Optional[Path] = None
     llm: LLMConfig = field(default_factory=LLMConfig)
@@ -75,18 +75,34 @@ class ProjectConfig(HarnessConfig):
     project_path: Path = Path(".")
 
 
-def load_config_from_env() -> LLMConfig:
-    """Build :class:`LLMConfig` from the first ``.env`` file found up the tree."""
+def load_config_from_env(cwd: Optional[Path] = None) -> LLMConfig:
+    """Build :class:`LLMConfig` from the first ``.env`` file found up the tree.
+
+    Searches ``cwd`` (defaults to the caller's working directory), then the
+    package directory tree. Loads the found file into ``os.environ`` via
+    ``load_dotenv`` so that downstream libraries (agno, OpenAI client) that
+    read environment variables directly will also pick up the values.
+    """
+    from dotenv import load_dotenv
+
+    search_dirs = []
+    if cwd is not None:
+        search_dirs.append(cwd.resolve())
+
     loader = os.path.dirname(os.path.abspath(__file__))
     project_dir = Path(loader).resolve().parent
-    for candidate in [project_dir, project_dir.parent]:
-        values = dotenv_values(str(candidate / ".env"))
-        if values:
+    search_dirs += [project_dir, project_dir.parent]
+
+    for candidate in search_dirs:
+        env_file = candidate / ".env"
+        if env_file.is_file():
+            load_dotenv(str(env_file), override=False)
+            values = dotenv_values(str(env_file))
             return LLMConfig(
-                base_url=values.get("LLM_URL", values.get("RESEARCH_LLM_BASE_URL", "http://127.0.0.1:11434/v1")),
-                model_id=values.get("LLM_MODEL", values.get("RESEARCH_LLM_MODEL", "qwen2.5:latest")),
-                api_key=values.get("OPENAI_API_KEY"),
-                temperature=float(values.get("RESEARCH_LLM_TEMPERATURE", "0.0")),
-                max_tokens=int(values.get("RESEARCH_LLM_MAX_TOKENS", "4096")),
+                base_url=values.get("LLM_URL") or values.get("RESEARCH_LLM_BASE_URL") or "http://127.0.0.1:11434/v1",
+                model_id=values.get("LLM_MODEL") or values.get("RESEARCH_LLM_MODEL") or "qwen2.5:latest",
+                api_key=values.get("LLM_API_KEY"),
+                temperature=float(values.get("RESEARCH_LLM_TEMPERATURE") or "0.0"),
+                max_tokens=int(values.get("RESEARCH_LLM_MAX_TOKENS") or "4096"),
             )
     return LLMConfig.from_env()

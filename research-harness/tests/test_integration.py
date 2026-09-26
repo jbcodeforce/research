@@ -45,11 +45,12 @@ def _make_config(tmp_path):
     repo_root = tmp_path / "repo"
     repo_root.mkdir()
     pcfg = ProjectConfig(
+        research_name="wf",
         repo_root=repo_root,
         git_root=repo_root,
         llm=LLMConfig(),
         conventions=RepoConventions(),
-        project_path=repo_root / "weather_forecast",
+        project_path=repo_root / "wf",
     )
     return pcfg
 
