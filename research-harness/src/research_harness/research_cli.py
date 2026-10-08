@@ -8,7 +8,8 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Optional
-
+import json
+from dataclasses import asdict
 import typer
 
 from research_harness.config import (
@@ -24,6 +25,43 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 
+def _report_error_and_exit(exc: Exception, llm_cfg) -> None:
+    msg = str(exc)
+    # Detect the two most common failure modes and give a clear fix hint.
+    if "connection" in msg.lower() or "connect" in msg.lower():
+        typer.echo(
+            f"\nERROR: Could not reach the LLM endpoint at {llm_cfg.base_url}\n"
+            f"  Check that the model server is running and the URL is correct.\n"
+            f"  Set LLM_URL in your .env to override (current: {llm_cfg.base_url})",
+            err=True,
+        )
+    elif "api_key" in msg.lower() or "authentication" in msg.lower() or "unauthorized" in msg.lower():
+        typer.echo(
+            "\nERROR: LLM authentication failed.\n"
+            "  Set LLM_API_KEY in your .env file.",
+            err=True,
+        )
+    else:
+        typer.echo(f"\nERROR: {exc}", err=True)
+    raise typer.Exit(code=1) from None
+
+def prepare_project_config(name: str, repo_root: Path) -> ProjectConfig:
+    resolved_root = repo_root.resolve() if repo_root else Path.cwd().resolve()
+    print(f"Resolved repo root: {resolved_root}")
+    llm_cfg = load_config_from_env(cwd=resolved_root)
+    conventions = RepoConventions()
+    project_slug = f"{slugify(name)}"
+    target_project_path = resolved_root / project_slug
+
+    pcfg = ProjectConfig(
+        research_name=name,
+        repo_root=resolved_root,
+        git_root=resolved_root,
+        llm=llm_cfg,
+        conventions=conventions,
+        project_path=target_project_path
+    )
+    return pcfg
 
 @app.command()
 def run(
@@ -40,56 +78,16 @@ def run(
         "--repo-root",
         "-r",
         help="Path to repository root (defaults to current working directory)",
-    ),
-    dry_run: bool = typer.Option(
-        False,
-        "--dry-run",
-        help="Dry run mode without LLM calls or filesystem side effects",
-    ),
+    )
 ) -> None:
     """Run the multi-agent research workflow on a topic."""
-    resolved_root = repo_root.resolve() if repo_root else Path.cwd().resolve()
-    llm_cfg = load_config_from_env(cwd=resolved_root)
-    conventions = RepoConventions()
-    project_slug = f"{slugify(name)}"
-    target_project_path = resolved_root / project_slug
-
-    pcfg = ProjectConfig(
-        research_name=name,
-        repo_root=resolved_root,
-        git_root=resolved_root,
-        llm=llm_cfg,
-        conventions=conventions,
-        dry_run=dry_run,
-        project_path=target_project_path
-    )
-
-    typer.echo(f"Starting research workflow for: {topic}")
-    typer.echo(f"Target folder: {target_project_path}")
-    typer.echo(f"Model: {llm_cfg.model_id} @ {llm_cfg.base_url}")
-
+    pcfg = prepare_project_config(name, repo_root)
+    typer.echo(f"ProjectConfig: {pcfg}")
     try:
         run_result = run_research(topic, pcfg)
     except Exception as exc:
-        msg = str(exc)
-        # Detect the two most common failure modes and give a clear fix hint.
-        if "connection" in msg.lower() or "connect" in msg.lower():
-            typer.echo(
-                f"\nERROR: Could not reach the LLM endpoint at {llm_cfg.base_url}\n"
-                f"  Check that the model server is running and the URL is correct.\n"
-                f"  Set LLM_URL in your .env to override (current: {llm_cfg.base_url})",
-                err=True,
-            )
-        elif "api_key" in msg.lower() or "authentication" in msg.lower() or "unauthorized" in msg.lower():
-            typer.echo(
-                "\nERROR: LLM authentication failed.\n"
-                "  Set LLM_API_KEY in your .env file.",
-                err=True,
-            )
-        else:
-            typer.echo(f"\nERROR: {exc}", err=True)
-        raise typer.Exit(code=1) from None
-
+        _report_error_and_exit(exc, pcfg.llm)
+       
     status_str = run_result.status.value if run_result.status else "completed"
     typer.echo(f"\nResearch workflow completed: {status_str}")
     if run_result.plan:

@@ -10,7 +10,30 @@ from research_harness.research_cli import app, main
 from research_harness.state import ResearchPhase, ResearchPlan, ResearchRun
 
 runner = CliRunner()
+import os
+from pathlib import Path
+current_dir = Path(__file__).resolve().parent.parent.parent
 
+os.environ["DOT_ENV_FILE"] = os.path.join(current_dir, ".env")
+
+def test_prepare_project_config(tmp_path):
+    """Verify that prepare_project_config returns a valid ProjectConfig."""
+    from research_harness.research_cli import prepare_project_config
+
+    name = "rtest"
+    pcfg = prepare_project_config(name, tmp_path)
+    print(pcfg)
+    assert pcfg.research_name == name
+    assert pcfg.repo_root == tmp_path.resolve()
+    assert pcfg.git_root == tmp_path.resolve()
+    assert pcfg.project_path == tmp_path.resolve() / "rtest"
+    assert pcfg.llm is not None
+    assert pcfg.llm.base_url is not None
+    assert pcfg.llm.model_id is not None
+    assert pcfg.llm.api_key is not None
+    assert pcfg.llm.temperature is not None
+    assert pcfg.llm.max_tokens is not None
+    assert pcfg.conventions is not None
 
 def test_cli_help():
     """Verify that --help works and shows options."""
@@ -25,8 +48,8 @@ def test_cli_run_direct(tmp_path):
         research_name= "rtest",
         topic="test topic",
         status=ResearchPhase.FINALIZE,
-        project_path=tmp_path / "test-topic",
-        plan=ResearchPlan(topic="test topic", folder_name="test-topic", branch_name="research-test-topic"),
+        project_path=tmp_path / "rtest",
+        plan=ResearchPlan(topic="test topic", folder_name="rtest", branch_name="research-test-topic"),
         git_commit_sha="abcdef1234567890",
     )
     with patch("research_harness.research_cli.run_research", return_value=mock_run) as mock_fn:

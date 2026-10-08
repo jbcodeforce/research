@@ -68,19 +68,6 @@ def _wrapper(opening, schema, closing, topic: str) -> str:
     )
 
 
-def plan_instructions(topic: str) -> str:
-    """Instructions for the researcher: emit a :class:`ResearchPlan`."""
-    schema = schema_block(ResearchPlan) + "\n\n" + _plan_schema(topic)
-    return _wrapper(
-        "You are the researcher. Read the repo's AGENTS.md for conventions and "
-        "its top-level README to understand existing projects, then investigate "
-        "the topic, then output JSON only:\n",
-        schema,
-        "Rules:\n"
-        "- Output ONLY JSON, nothing else.\n"
-        "- Follow the repo's conventions exactly (uv + tests + no heavy markdown bold).\n",
-        topic,
-    )
 
 
 def code_instructions(topic: str) -> str:

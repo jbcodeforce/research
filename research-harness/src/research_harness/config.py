@@ -60,7 +60,6 @@ class HarnessConfig:
     git_root: Optional[Path] = None
     llm: LLMConfig = field(default_factory=LLMConfig)
     conventions: RepoConventions = field(default_factory=RepoConventions)
-    dry_run: bool = False
 
     @property
     def root(self) -> Path:
@@ -76,7 +75,7 @@ class ProjectConfig(HarnessConfig):
 
 
 def load_config_from_env(cwd: Optional[Path] = None) -> LLMConfig:
-    """Build :class:`LLMConfig` from the first ``.env`` file found up the tree.
+    """Build :class:`LLMConfig` from the first ``.env`` file from DOT_ENV_FILE  or found up the tree.
 
     Searches ``cwd`` (defaults to the caller's working directory), then the
     package directory tree. Loads the found file into ``os.environ`` via
@@ -84,25 +83,29 @@ def load_config_from_env(cwd: Optional[Path] = None) -> LLMConfig:
     read environment variables directly will also pick up the values.
     """
     from dotenv import load_dotenv
+    # Load .env file specified by DOT_ENV_FILE if it exists
+    dot_env_file = os.environ.get("DOT_ENV_FILE")
+    if dot_env_file and Path(dot_env_file).is_file():
+        load_dotenv(dot_env_file, override=False)
+    else:
+        search_dirs = []
+        if cwd is not None:
+            search_dirs.append(cwd.resolve())
+        loader = os.path.dirname(os.path.abspath(__file__))
+        project_dir = Path(loader).resolve().parent
+        search_dirs += [project_dir, project_dir.parent]
 
-    search_dirs = []
-    if cwd is not None:
-        search_dirs.append(cwd.resolve())
+        for candidate in search_dirs:
+            dot_env_file = candidate / ".env"
+            if dot_env_file.is_file():
+                load_dotenv(str(dot_env_file), override=False)
+                break
+    values = dotenv_values(str(dot_env_file))
+    return LLMConfig(
+        base_url=values.get("LLM_URL") or values.get("RESEARCH_LLM_BASE_URL") or "http://127.0.0.1:11434/v1",
+        model_id=values.get("LLM_MODEL") or values.get("RESEARCH_LLM_MODEL") or "qwen2.5:latest",
+        api_key=values.get("LLM_API_KEY"),
+        temperature=float(values.get("RESEARCH_LLM_TEMPERATURE") or "0.0"),
+        max_tokens=int(values.get("RESEARCH_LLM_MAX_TOKENS") or "4096"),
+    )
 
-    loader = os.path.dirname(os.path.abspath(__file__))
-    project_dir = Path(loader).resolve().parent
-    search_dirs += [project_dir, project_dir.parent]
-
-    for candidate in search_dirs:
-        env_file = candidate / ".env"
-        if env_file.is_file():
-            load_dotenv(str(env_file), override=False)
-            values = dotenv_values(str(env_file))
-            return LLMConfig(
-                base_url=values.get("LLM_URL") or values.get("RESEARCH_LLM_BASE_URL") or "http://127.0.0.1:11434/v1",
-                model_id=values.get("LLM_MODEL") or values.get("RESEARCH_LLM_MODEL") or "qwen2.5:latest",
-                api_key=values.get("LLM_API_KEY"),
-                temperature=float(values.get("RESEARCH_LLM_TEMPERATURE") or "0.0"),
-                max_tokens=int(values.get("RESEARCH_LLM_MAX_TOKENS") or "4096"),
-            )
-    return LLMConfig.from_env()

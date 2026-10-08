@@ -49,7 +49,7 @@ def _content_of(content: Any) -> Any:
     return content
 
 
-def scaffold_executor(step_input: StepInput, project_path: Path, git_root: Path) -> str:
+def _scaffold_executor(step_input: StepInput, project_path: Path, git_root: Path) -> str:
     """Deterministic step: create the git branch and empty project folder.
 
     Reads the researcher's plan JSON from ``previous_step_content``.
@@ -64,45 +64,19 @@ def scaffold_executor(step_input: StepInput, project_path: Path, git_root: Path)
     return f"scaffolded {plan.folder_name} on branch '{plan.branch_name}'"
 
 
-def _bind_tools(project_path: Path) -> list:
-    """Return the full tool list for an agent, bound to ``project_path``.
 
-    agno inspects each tool's ``__name__``; functools.partial has none, so we
-    attach a name to keep tool-registration warnings at bay.
-    """
-    root = project_path
-
-    def _named(func, name: str):
-        def wrapper(*args, **kwargs):
-            return func(*args, **kwargs)
-
-        wrapper.__name__ = name
-        return wrapper
-
-    return [
-        _named(repo.read_agents_md(root), "read_agents_md"),
-        _named(repo.read_file(root), "read_file"),
-        _named(repo.list_projects(root), "list_projects"),
-        _named(repo.write_file(root), "write_file"),
-        _named(run_shell, "run_shell"),
-        _named(repo.create_branch(root), "create_branch"),
-        _named(repo.git_add(root), "git_add"),
-        _named(repo.git_commit(root), "git_commit"),
-    ]
-
-
-def build_research_workflow(config: HarnessConfig, model, topic: str) -> Workflow:
+def _build_research_workflow(config: HarnessConfig, topic: str) -> Workflow:
     """Assemble the Agno research workflow for ``topic``."""
     project_path = config.project_path
     git_root = config.git_root or project_path
-
+    model = build_model(config)
     researcher = build_researcher(model, project_path, topic=topic)
     coder = build_coder(model, project_path, topic=topic)
     reporter = build_reporter(model, project_path, topic=topic)
 
     scaffold = Step(
         name="scaffold",
-        executor=lambda step_input: scaffold_executor(step_input, project_path, git_root),
+        executor=lambda step_input: _scaffold_executor(step_input, project_path, git_root),
     )
 
     return Workflow(
@@ -162,21 +136,17 @@ def _collect_structured(run: ResearchRun, step_results) -> None:
             setattr(run, best_name, parsed)
 
 
-def run_research(topic: str, config: ProjectConfig, model: Optional[Model] = None, stub_responses: Optional[List[str]] = None) -> ResearchRun:
+def run_research(topic: str, config: ProjectConfig, model: Optional[Model] = None) -> ResearchRun:
     """Run the full research workflow and assemble a :class:`ResearchRun`.
-
-    Pass ``stub_responses`` (one JSON string per agent) to run fully offline with
-    canned text; otherwise a real LLM model is built.
+    The research workflow executes different agents. The state is modeled in ResearchPlan.
     """
-    if model is None:
-        model = build_model(config, stub_responses=stub_responses)
     git_root = config.git_root or config.project_path
     run = ResearchRun.from_topic(config.research_name, topic)
     run.project_path = config.project_path
-    run.plan = build_default_plan(run, config.conventions)
+    run.plan = _build_default_plan(run, config.conventions)
     run.status = ResearchPhase.PLAN
 
-    workflow = build_research_workflow(config, model, topic)
+    workflow = _build_research_workflow(config, topic)
     out = workflow.run(input=topic)
     _collect_structured(run, out.step_results)
     run.status = ResearchPhase.CODE
@@ -185,7 +155,7 @@ def run_research(topic: str, config: ProjectConfig, model: Optional[Model] = Non
     return run
 
 
-def build_default_plan(run: ResearchRun, conventions) -> ResearchPlan:
+def _build_default_plan(run: ResearchRun, conventions) -> ResearchPlan:
     """Create a default plan with folder/branch names derived from the topic."""
     from research_harness.state import slugify
 
